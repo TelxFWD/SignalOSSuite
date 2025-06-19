@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Pipeline Debugger - SignalOS Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --background: #f8f9fc;
+            --surface: #ffffff;
+        }
+        
+        body {
+            background-color: var(--background);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .content-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .signal-status {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-processed { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .status-executed { background: #cce7ff; color: #004085; }
+        
+        .confidence-bar {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+            transition: width 0.3s ease;
+        }
+        
+        .pipeline-steps {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .pipeline-step {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .pipeline-step.active {
+            border-color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .pipeline-step.success {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+        
+        .pipeline-step.error {
+            border-color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        .pipeline-arrow {
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
+        
+        .signal-details {
+            background: #f8f9fc;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .debug-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-debug {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .trade-result {
+            border-left: 4px solid;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .trade-success { border-color: #28a745; background: rgba(40, 167, 69, 0.1); }
+        .trade-pending { border-color: #ffc107; background: rgba(255, 193, 7, 0.1); }
+        .trade-failed { border-color: #dc3545; background: rgba(220, 53, 69, 0.1); }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/admin">
+                <i class="fas fa-shield-alt me-2"></i>SignalOS Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/admin/settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/admin/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 text-primary fw-bold">Signal Pipeline Debugger</h1>
+            <a href="/admin" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- Pipeline Overview -->
+        <div class="content-card">
+            <h5 class="mb-3">Pipeline Overview</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="h2 text-primary">{{ signals|length }}</div>
+                        <div class="text-muted">Total Signals</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="h2 text-success">{{ signals|selectattr('status', 'equalto', 'processed')|list|length }}</div>
+                        <div class="text-muted">Processed</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="h2 text-warning">{{ signals|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+                        <div class="text-muted">Pending</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <div class="h2 text-danger">{{ signals|selectattr('status', 'equalto', 'failed')|list|length }}</div>
+                        <div class="text-muted">Failed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Signal Pipeline Table -->
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Recent Signals</h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" style="width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="processed">Processed</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="refreshSignals()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Signal ID</th>
+                            <th>Received</th>
+                            <th>Pair</th>
+                            <th>Action</th>
+                            <th>Confidence</th>
+                            <th>Status</th>
+                            <th>Debug</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for signal in signals %}
+                        <tr onclick="expandSignalDetails({{ signal.id }})" style="cursor: pointer;">
+                            <td><strong>#{{ signal.id }}</strong></td>
+                            <td>{{ signal.received_at.strftime('%H:%M:%S') if signal.received_at else 'N/A' }}</td>
+                            <td>{{ signal.parsed_pair or 'Unknown' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if signal.parsed_action == 'BUY' else 'danger' if signal.parsed_action == 'SELL' else 'secondary' }}">
+                                    {{ signal.parsed_action or 'Unknown' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: {{ (signal.confidence_score * 100) if signal.confidence_score else 0 }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ "%.1f"|format(signal.confidence_score * 100) if signal.confidence_score else 0 }}%</small>
+                            </td>
+                            <td>
+                                <span class="signal-status status-{{ signal.status or 'pending' }}">
+                                    {{ signal.status or 'Pending' }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-primary btn-sm" onclick="debugSignal({{ signal.id }}); event.stopPropagation();">
+                                    <i class="fas fa-bug"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="details-{{ signal.id }}" class="signal-details-row" style="display: none;">
+                            <td colspan="7">
+                                <div class="signal-details">
+                                    <!-- Signal pipeline visualization -->
+                                    <div class="pipeline-steps">
+                                        <div class="pipeline-step {{ 'success' if signal.raw_text else 'active' }}">
+                                            <i class="fas fa-download mb-2"></i>
+                                            <div class="small fw-bold">Signal Received</div>
+                                            <div class="text-muted small">{{ signal.received_at.strftime('%H:%M:%S') if signal.received_at else 'N/A' }}</div>
+                                        </div>
+                                        <i class="fas fa-arrow-right pipeline-arrow"></i>
+                                        <div class="pipeline-step {{ 'success' if signal.parsed_pair else 'error' if signal.confidence_score and signal.confidence_score < 0.5 else 'active' }}">
+                                            <i class="fas fa-brain mb-2"></i>
+                                            <div class="small fw-bold">Parser Analysis</div>
+                                            <div class="text-muted small">{{ "%.1f"|format(signal.confidence_score * 100) if signal.confidence_score else 0 }}% confidence</div>
+                                        </div>
+                                        <i class="fas fa-arrow-right pipeline-arrow"></i>
+                                        <div class="pipeline-step {{ 'success' if signal.status == 'processed' else 'error' if signal.status == 'failed' else 'active' }}">
+                                            <i class="fas fa-cogs mb-2"></i>
+                                            <div class="small fw-bold">JSON Generation</div>
+                                            <div class="text-muted small">MT5 Command</div>
+                                        </div>
+                                        <i class="fas fa-arrow-right pipeline-arrow"></i>
+                                        <div class="pipeline-step">
+                                            <i class="fas fa-chart-line mb-2"></i>
+                                            <div class="small fw-bold">Trade Execution</div>
+                                            <div class="text-muted small">EA Status</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Raw signal text -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Raw Signal Text</h6>
+                                            <div class="bg-light p-3 rounded">
+                                                <code>{{ signal.raw_text or 'No raw text available' }}</code>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Parsed Results</h6>
+                                            <div class="bg-light p-3 rounded">
+                                                <div><strong>Pair:</strong> {{ signal.parsed_pair or 'Not detected' }}</div>
+                                                <div><strong>Action:</strong> {{ signal.parsed_action or 'Not detected' }}</div>
+                                                <div><strong>Entry:</strong> {{ signal.parsed_entry or 'Not detected' }}</div>
+                                                <div><strong>SL:</strong> {{ signal.parsed_sl or 'Not detected' }}</div>
+                                                <div><strong>TP:</strong> {{ signal.parsed_tp or 'Not detected' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Debug actions -->
+                                    <div class="debug-actions mt-3">
+                                        <button class="btn btn-debug btn-outline-primary" onclick="reparseSignal({{ signal.id }})">
+                                            <i class="fas fa-redo me-2"></i>Re-parse Signal
+                                        </button>
+                                        <button class="btn btn-debug btn-outline-success" onclick="reexecuteSignal({{ signal.id }})">
+                                            <i class="fas fa-play me-2"></i>Re-execute
+                                        </button>
+                                        <button class="btn btn-debug btn-outline-warning" onclick="markResolved({{ signal.id }})">
+                                            <i class="fas fa-check me-2"></i>Mark Resolved
+                                        </button>
+                                        <button class="btn btn-debug btn-outline-info" onclick="exportLogs({{ signal.id }})">
+                                            <i class="fas fa-download me-2"></i>Export Logs
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function expandSignalDetails(signalId) {
+            const detailsRow = document.getElementById(`details-${signalId}`);
+            if (detailsRow.style.display === 'none') {
+                detailsRow.style.display = 'table-row';
+            } else {
+                detailsRow.style.display = 'none';
+            }
+        }
+        
+        function debugSignal(signalId) {
+            console.log(`Debugging signal ${signalId}`);
+            // Implement debug functionality
+        }
+        
+        function reparseSignal(signalId) {
+            if (confirm('Re-parse this signal? This will run it through the parser again.')) {
+                fetch(`/admin/api/signals/${signalId}/reparse`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Signal re-parsed successfully');
+                            location.reload();
+                        } else {
+                            alert('Re-parse failed: ' + data.error);
+                        }
+                    });
+            }
+        }
+        
+        function reexecuteSignal(signalId) {
+            if (confirm('Re-execute this signal? This will send it to MT5 again.')) {
+                fetch(`/admin/api/signals/${signalId}/reexecute`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Signal re-executed successfully');
+                            location.reload();
+                        } else {
+                            alert('Re-execution failed: ' + data.error);
+                        }
+                    });
+            }
+        }
+        
+        function markResolved(signalId) {
+            if (confirm('Mark this signal as resolved?')) {
+                fetch(`/admin/api/signals/${signalId}/resolve`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Signal marked as resolved');
+                            location.reload();
+                        } else {
+                            alert('Operation failed: ' + data.error);
+                        }
+                    });
+            }
+        }
+        
+        function exportLogs(signalId) {
+            window.open(`/admin/api/signals/${signalId}/logs`, '_blank');
+        }
+        
+        function refreshSignals() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

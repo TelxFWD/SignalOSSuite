@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - SignalOS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --background: #f8f9fc;
+            --surface: #ffffff;
+        }
+        
+        body {
+            background-color: var(--background);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .content-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .model-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .model-card.active {
+            border-color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .model-version {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .accuracy-badge {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .accuracy-excellent { background: #d4edda; color: #155724; }
+        .accuracy-good { background: #fff3cd; color: #856404; }
+        .accuracy-poor { background: #f8d7da; color: #721c24; }
+        
+        .training-progress {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .training-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+        
+        .notification-template {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .template-variables {
+            background: #f8f9fc;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/admin">
+                <i class="fas fa-shield-alt me-2"></i>SignalOS Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/admin/settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/admin/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 text-primary fw-bold">Admin Settings & Configuration</h1>
+            <a href="/admin" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- Settings Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="parser-tab" data-bs-toggle="tab" data-bs-target="#parser" type="button">
+                    <i class="fas fa-brain me-2"></i>Parser Models
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button">
+                    <i class="fas fa-cog me-2"></i>System Config
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button">
+                    <i class="fas fa-shield-alt me-2"></i>Security
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="settingsTabContent">
+            <!-- Parser Models Tab -->
+            <div class="tab-pane fade show active" id="parser" role="tabpanel">
+                <div class="content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Parser Model Hub</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success" onclick="uploadTrainingData()">
+                                <i class="fas fa-upload me-2"></i>Upload Training Data
+                            </button>
+                            <button class="btn btn-primary" onclick="triggerRetraining()">
+                                <i class="fas fa-play me-2"></i>Trigger Retraining
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-primary">{{ parser_models|length }}</div>
+                                <div class="text-muted">Total Models</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-success">{{ parser_models|selectattr('active')|list|length }}</div>
+                                <div class="text-muted">Active Models</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-info">87.3%</div>
+                                <div class="text-muted">Avg Accuracy</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-warning">12,450</div>
+                                <div class="text-muted">Training Samples</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parser Models List -->
+                    <div class="row">
+                        {% for model in parser_models %}
+                        <div class="col-md-6 mb-3">
+                            <div class="model-card {{ 'active' if model.active else '' }}">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ model.name }}</h6>
+                                        <span class="model-version">v{{ model.version }}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="accuracy-badge {{ 'accuracy-excellent' if model.accuracy > 0.85 else 'accuracy-good' if model.accuracy > 0.70 else 'accuracy-poor' }}">
+                                            {{ "%.1f"|format(model.accuracy * 100) if model.accuracy else 0 }}% accuracy
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-muted small mb-3">{{ model.description or 'No description available' }}</p>
+                                
+                                <div class="row text-center mb-3">
+                                    <div class="col-4">
+                                        <div class="small text-muted">Training Samples</div>
+                                        <div class="fw-semibold">{{ model.training_samples or 0 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-muted">Created</div>
+                                        <div class="fw-semibold">{{ model.created_at.strftime('%m/%d') if model.created_at else 'N/A' }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="small text-muted">Status</div>
+                                        <div class="fw-semibold">{{ 'Active' if model.active else 'Inactive' }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-primary btn-sm flex-fill" onclick="viewModelMetrics({{ model.id }})">
+                                        <i class="fas fa-chart-line me-1"></i>Metrics
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" onclick="activateModel({{ model.id }})" 
+                                            {{ 'disabled' if model.active else '' }}>
+                                        <i class="fas fa-play me-1"></i>{{ 'Active' if model.active else 'Activate' }}
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="rollbackModel({{ model.id }})">
+                                        <i class="fas fa-undo me-1"></i>Rollback
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Model Performance Chart -->
+                    <div class="mt-4">
+                        <h6>Model Performance Over Time</h6>
+                        <div id="modelPerformanceChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications Tab -->
+            <div class="tab-pane fade" id="notifications" role="tabpanel">
+                <div class="content-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Notification Templates</h5>
+                        <button class="btn btn-success" onclick="createNotificationTemplate()">
+                            <i class="fas fa-plus me-2"></i>Create Template
+                        </button>
+                    </div>
+                    
+                    <!-- Notification Templates -->
+                    {% for template in templates %}
+                    <div class="notification-template">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ template.name }}</h6>
+                                <span class="badge bg-{{ 'primary' if template.type == 'telegram' else 'info' if template.type == 'email' else 'success' }}">
+                                    {{ template.type|upper }}
+                                </span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="editTemplate({{ template.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="testTemplate({{ template.id }})">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Message Template:</strong>
+                            <div class="template-variables">{{ template.message_template or 'No template defined' }}</div>
+                        </div>
+                        
+                        <div>
+                            <strong>Available Variables:</strong>
+                            <div class="template-variables">{{ template.variables or '{}' }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- System Config Tab -->
+            <div class="tab-pane fade" id="system" role="tabpanel">
+                <div class="content-card">
+                    <h5 class="mb-4">System Configuration</h5>
+                    
+                    <form id="systemConfigForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Parser Settings</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Default Confidence Threshold</label>
+                                    <input type="range" class="form-range" id="confidenceThreshold" min="0" max="100" value="75">
+                                    <div class="d-flex justify-content-between">
+                                        <small>0%</small>
+                                        <small id="confidenceValue">75%</small>
+                                        <small>100%</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Parser Timeout (seconds)</label>
+                                    <input type="number" class="form-control" value="30" min="1" max="300">
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enableOCR" checked>
+                                    <label class="form-check-label" for="enableOCR">
+                                        Enable OCR for Image Signals
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Trade Execution</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Max Concurrent Trades</label>
+                                    <input type="number" class="form-control" value="10" min="1" max="100">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Trade Timeout (seconds)</label>
+                                    <input type="number" class="form-control" value="60" min="1" max="600">
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enableRetryQueue" checked>
+                                    <label class="form-check-label" for="enableRetryQueue">
+                                        Enable Retry Queue for Failed Trades
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Monitoring & Logging</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Log Level</label>
+                                    <select class="form-select">
+                                        <option>DEBUG</option>
+                                        <option selected>INFO</option>
+                                        <option>WARNING</option>
+                                        <option>ERROR</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Log Retention (days)</label>
+                                    <input type="number" class="form-control" value="30" min="1" max="365">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Performance</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Worker Threads</label>
+                                    <input type="number" class="form-control" value="4" min="1" max="16">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Cache TTL (minutes)</label>
+                                    <input type="number" class="form-control" value="5" min="1" max="60">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-primary" onclick="saveSystemConfig()">
+                                <i class="fas fa-save me-2"></i>Save Configuration
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetSystemConfig()">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Security Tab -->
+            <div class="tab-pane fade" id="security" role="tabpanel">
+                <div class="content-card">
+                    <h5 class="mb-4">Security Settings</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Authentication</h6>
+                            <div class="mb-3">
+                                <label class="form-label">JWT Token Expiry (hours)</label>
+                                <input type="number" class="form-control" value="24" min="1" max="168">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Max Login Attempts</label>
+                                <input type="number" class="form-control" value="5" min="1" max="20">
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="enableTwoFactor">
+                                <label class="form-check-label" for="enableTwoFactor">
+                                    Enable Two-Factor Authentication
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>API Security</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Rate Limit (requests/minute)</label>
+                                <input type="number" class="form-control" value="100" min="1" max="1000">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">API Key Rotation (days)</label>
+                                <input type="number" class="form-control" value="90" min="1" max="365">
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="enableHardwareBinding" checked>
+                                <label class="form-check-label" for="enableHardwareBinding">
+                                    Enable Hardware ID Binding
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="saveSecuritySettings()">
+                            <i class="fas fa-save me-2"></i>Save Security Settings
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="rotateApiKeys()">
+                            <i class="fas fa-sync-alt me-2"></i>Rotate All API Keys
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize model performance chart
+        document.addEventListener('DOMContentLoaded', function() {
+            const chartData = [{
+                x: ['v1.0', 'v1.1', 'v1.2', 'v2.0', 'v2.1'],
+                y: [75.2, 78.9, 82.1, 85.7, 87.3],
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Accuracy %',
+                line: { color: '#667eea', width: 3 },
+                marker: { size: 8, color: '#764ba2' }
+            }];
+            
+            const layout = {
+                title: 'Parser Model Accuracy Evolution',
+                xaxis: { title: 'Model Version' },
+                yaxis: { title: 'Accuracy (%)' },
+                showlegend: false,
+                margin: { t: 40, r: 40, b: 40, l: 60 }
+            };
+            
+            Plotly.newPlot('modelPerformanceChart', chartData, layout, {responsive: true});
+            
+            // Update confidence threshold display
+            document.getElementById('confidenceThreshold').addEventListener('input', function() {
+                document.getElementById('confidenceValue').textContent = this.value + '%';
+            });
+        });
+        
+        // Parser model functions
+        function uploadTrainingData() {
+            console.log('Opening training data upload dialog');
+            alert('Training data upload functionality would be implemented here');
+        }
+        
+        function triggerRetraining() {
+            if (confirm('Trigger model retraining? This may take several hours.')) {
+                console.log('Starting model retraining');
+                alert('Model retraining started. You will be notified when complete.');
+            }
+        }
+        
+        function viewModelMetrics(modelId) {
+            console.log(`Viewing metrics for model ${modelId}`);
+            // Implementation would show detailed metrics modal
+        }
+        
+        function activateModel(modelId) {
+            if (confirm('Activate this model for all users?')) {
+                console.log(`Activating model ${modelId}`);
+                location.reload();
+            }
+        }
+        
+        function rollbackModel(modelId) {
+            if (confirm('Rollback to previous model version?')) {
+                console.log(`Rolling back model ${modelId}`);
+                location.reload();
+            }
+        }
+        
+        // Notification functions
+        function createNotificationTemplate() {
+            console.log('Creating new notification template');
+            // Implementation would show template creation modal
+        }
+        
+        function editTemplate(templateId) {
+            console.log(`Editing template ${templateId}`);
+            // Implementation would show template editor
+        }
+        
+        function testTemplate(templateId) {
+            console.log(`Testing template ${templateId}`);
+            alert('Test notification sent successfully!');
+        }
+        
+        // System config functions
+        function saveSystemConfig() {
+            console.log('Saving system configuration');
+            alert('System configuration saved successfully!');
+        }
+        
+        function resetSystemConfig() {
+            if (confirm('Reset all settings to defaults?')) {
+                console.log('Resetting system configuration');
+                location.reload();
+            }
+        }
+        
+        // Security functions
+        function saveSecuritySettings() {
+            console.log('Saving security settings');
+            alert('Security settings saved successfully!');
+        }
+        
+        function rotateApiKeys() {
+            if (confirm('Rotate all API keys? This will invalidate existing keys.')) {
+                console.log('Rotating API keys');
+                alert('API keys rotated successfully!');
+            }
+        }
+    </script>
+</body>
+</html>

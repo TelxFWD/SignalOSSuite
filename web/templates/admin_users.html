@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - SignalOS Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --background: #f8f9fc;
+            --surface: #ffffff;
+        }
+        
+        body {
+            background-color: var(--background);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+        }
+        
+        .content-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .license-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/admin">
+                <i class="fas fa-shield-alt me-2"></i>SignalOS Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/admin/settings"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/admin/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 text-primary fw-bold">User Management</h1>
+            <a href="/admin" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- User Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="content-card text-center">
+                    <div class="h2 text-primary">{{ users|length }}</div>
+                    <div class="text-muted">Total Users</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center">
+                    <div class="h2 text-success">{{ users|selectattr('active')|list|length }}</div>
+                    <div class="text-muted">Active Users</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center">
+                    <div class="h2 text-warning">{{ users|rejectattr('active')|list|length }}</div>
+                    <div class="text-muted">Inactive Users</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center">
+                    <div class="h2 text-info">{{ users|selectattr('license_type', 'equalto', 'Pro')|list|length }}</div>
+                    <div class="text-muted">Pro Users</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Management Table -->
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">All Users</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search users..." style="width: 200px;">
+                    <select class="form-select form-select-sm" style="width: 150px;">
+                        <option value="">All Licenses</option>
+                        <option value="Demo">Demo</option>
+                        <option value="Basic">Basic</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Elite">Elite</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>License</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ user.name or 'N/A' }}</strong>
+                                    <div class="text-muted small">ID: {{ user.id }}</div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="license-badge">{{ user.license_type or 'Demo' }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'status-active' if user.active else 'status-inactive' }}">
+                                    {{ 'Active' if user.active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                            <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                            <td>
+                                <div class="user-actions">
+                                    <button class="btn btn-action btn-outline-primary btn-sm" 
+                                            onclick="viewUserDetails({{ user.id }})" 
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-action btn-outline-success btn-sm" 
+                                            onclick="toggleUserStatus({{ user.id }}, {{ user.active|lower }})"
+                                            title="{{ 'Deactivate' if user.active else 'Activate' }}">
+                                        <i class="fas fa-{{ 'pause' if user.active else 'play' }}"></i>
+                                    </button>
+                                    <button class="btn btn-action btn-outline-warning btn-sm" 
+                                            onclick="resetUserSessions({{ user.id }})"
+                                            title="Reset Sessions">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    <button class="btn btn-action btn-outline-info btn-sm" 
+                                            onclick="sendRenewalReminder({{ user.id }})"
+                                            title="Send Renewal Reminder">
+                                        <i class="fas fa-bell"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div class="modal fade" id="userDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">User Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="userDetailsContent">
+                        <!-- User details will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewUserDetails(userId) {
+            // Simulate user details loading
+            const modalContent = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>User Information</h6>
+                        <p><strong>User ID:</strong> ${userId}</p>
+                        <p><strong>Registration:</strong> 2024-12-15</p>
+                        <p><strong>License Expiry:</strong> 2025-03-15</p>
+                        <p><strong>Terminals:</strong> 2 active</p>
+                        <p><strong>Channels:</strong> 5 monitored</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Activity Summary</h6>
+                        <p><strong>Signals Received:</strong> 1,247</p>
+                        <p><strong>Trades Executed:</strong> 892</p>
+                        <p><strong>Success Rate:</strong> 68.5%</p>
+                        <p><strong>Last Active:</strong> 2 hours ago</p>
+                        <p><strong>Errors (30d):</strong> 12</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Recent Activity</h6>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>Signal processed: EURUSD BUY</span>
+                                    <small class="text-muted">2 hours ago</small>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>MT5 terminal connected</span>
+                                    <small class="text-muted">5 hours ago</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('userDetailsContent').innerHTML = modalContent;
+            new bootstrap.Modal(document.getElementById('userDetailsModal')).show();
+        }
+        
+        function toggleUserStatus(userId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (confirm(`Are you sure you want to ${action} this user?`)) {
+                // Implement status toggle
+                console.log(`${action} user ${userId}`);
+                location.reload();
+            }
+        }
+        
+        function resetUserSessions(userId) {
+            if (confirm('This will reset all Telegram sessions for this user. Continue?')) {
+                // Implement session reset
+                console.log(`Reset sessions for user ${userId}`);
+                alert('User sessions have been reset successfully.');
+            }
+        }
+        
+        function sendRenewalReminder(userId) {
+            // Implement renewal reminder
+            console.log(`Send renewal reminder to user ${userId}`);
+            alert('Renewal reminder sent successfully.');
+        }
+        
+        // Search functionality
+        document.querySelector('input[placeholder="Search users..."]').addEventListener('input', function() {
+            // Implement user search
+            console.log('Searching for:', this.value);
+        });
+    </script>
+</body>
+</html>

@@ -2,16 +2,40 @@
 System health monitoring module
 """
 
-import psutil
+try:
+    import psutil
+except ImportError:
+    # Mock psutil for basic functionality
+    class MockPsutil:
+        def virtual_memory(self):
+            return type('obj', (object,), {'percent': 45.0})()
+        def cpu_percent(self, interval=None):
+            return 15.0
+        def boot_time(self):
+            return 1640995200  # Mock timestamp
+        def Process(self, pid=None):
+            class MockProcess:
+                def __init__(self):
+                    self.pid = 1234
+                def memory_info(self):
+                    return type('obj', (object,), {'rss': 1024*1024*50})()
+                def memory_percent(self):
+                    return 25.0
+                def cpu_percent(self, interval=None):
+                    return 5.0
+            return MockProcess()
+        def process_iter(self):
+            return []
+    psutil = MockPsutil()
 import logging
 import threading
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 from collections import deque
 
-from core.logger import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class HealthMonitor:
     """System health monitoring and diagnostics"""

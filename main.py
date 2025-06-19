@@ -17,15 +17,8 @@ from typing import Dict, Any
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-try:
-    from flask import Flask, render_template, jsonify, request, send_from_directory
-    from flask_socketio import SocketIO, emit
-except ImportError:
-    print("Installing Flask dependencies...")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "flask", "flask-socketio"])
-    from flask import Flask, render_template, jsonify, request, send_from_directory
-    from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, jsonify, request, send_from_directory
+from flask_socketio import SocketIO, emit
 
 from core.logger import setup_logging, get_signalos_logger
 from config.settings import AppSettings
@@ -40,8 +33,13 @@ class SignalOSWebApp:
         self.app = Flask(__name__, 
                         template_folder='web/templates',
                         static_folder='web/static')
-        self.app.config['SECRET_KEY'] = 'signalos-secret-key-2024'
-        self.socketio = SocketIO(self.app, cors_allowed_origins="*")
+        # Use environment variable for secret key in production
+        self.app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+        
+        # Set host to 0.0.0.0 for Replit compatibility
+        self.host = '0.0.0.0'
+        self.port = int(os.environ.get('PORT', 5000))
+        self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
         
         self.settings = AppSettings()
         self.health_monitor = HealthMonitor()
@@ -422,8 +420,8 @@ class SignalOSWebApp:
             # Run the Flask-SocketIO app
             self.socketio.run(
                 self.app,
-                host='0.0.0.0',
-                port=5000,
+                host=self.host,
+                port=self.port,
                 debug=False,
                 allow_unsafe_werkzeug=True
             )

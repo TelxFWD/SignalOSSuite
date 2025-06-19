@@ -9,11 +9,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from dataclasses import asdict
 
-from config.settings import settings
+from config.settings import AppSettings
+settings = AppSettings()
 from models.signal_model import ParsedSignal, ExecutionSignal, SignalStatus
-from core.logger import get_logger
+import logging
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class SignalEngine:
     """Engine for processing and executing trading signals"""

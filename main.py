@@ -19,6 +19,19 @@ sys.path.insert(0, str(project_root))
 
 from flask import Flask, render_template, jsonify, request, send_from_directory
 from flask_socketio import SocketIO, emit
+from datetime import datetime, timedelta
+import hashlib
+import base64
+try:
+    import jwt
+    JWT_AVAILABLE = True
+except ImportError:
+    JWT_AVAILABLE = False
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
 
 from core.logger import setup_logging, get_signalos_logger
 from config.settings import AppSettings
@@ -33,8 +46,22 @@ class SignalOSWebApp:
         self.app = Flask(__name__, 
                         template_folder='web/templates',
                         static_folder='web/static')
+        
+        # Enable CORS for React frontend
+        if CORS_AVAILABLE:
+            CORS(self.app, origins=["http://localhost:3000", "https://*.replit.app"])
+        else:
+            # Manual CORS headers
+            @self.app.after_request
+            def after_request(response):
+                response.headers.add('Access-Control-Allow-Origin', '*')
+                response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+                response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+                return response
+        
         # Use environment variable for secret key in production
         self.app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+        self.app.config['JWT_SECRET'] = os.environ.get('JWT_SECRET', 'jwt-secret-key-change-in-production')
         
         # Set host to 0.0.0.0 for Replit compatibility
         self.host = '0.0.0.0'
@@ -54,7 +81,21 @@ class SignalOSWebApp:
         
         @self.app.route('/')
         def index():
-            """Main dashboard"""
+            """Main dashboard - serve React app in production"""
+            return self.render_dashboard()
+        
+        # Serve React static files in production
+        @self.app.route('/static/<path:filename>')
+        def serve_static(filename):
+            """Serve React static files"""
+            return send_from_directory('frontend/build/static', filename)
+        
+        # Catch-all route for React Router
+        @self.app.route('/<path:path>')
+        def catch_all(path):
+            """Catch-all route for React Router"""
+            if path.startswith('api/'):
+                return jsonify({'error': 'API endpoint not found'}), 404
             return self.render_dashboard()
         
         @self.app.route('/api/health')
@@ -97,6 +138,272 @@ class SignalOSWebApp:
                 'status': 'ok',
                 'timestamp': datetime.now().isoformat(),
                 'message': 'SignalOS API is running'
+            })
+        
+        # Authentication routes
+        @self.app.route('/api/auth/login', methods=['POST'])
+        def login():
+            """User login endpoint"""
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
+            
+            # Mock user validation for now
+            if email and password:
+                # Generate token (JWT if available, simple base64 otherwise)
+                if JWT_AVAILABLE:
+                    payload = {
+                        'user_id': 1,
+                        'email': email,
+                        'name': 'SignalOS User',
+                        'license': 'Pro',
+                        'exp': datetime.utcnow() + timedelta(days=7)
+                    }
+                    token = jwt.encode(payload, self.app.config['JWT_SECRET'], algorithm='HS256')
+                else:
+                    # Simple token alternative
+                    token_data = f"{email}:{datetime.utcnow().timestamp()}"
+                    token = base64.b64encode(token_data.encode()).decode()
+                
+                return jsonify({
+                    'token': token,
+                    'user': {
+                        'id': 1,
+                        'email': email,
+                        'name': 'SignalOS User',
+                        'license': 'Pro'
+                    }
+                })
+            
+            return jsonify({'message': 'Invalid credentials'}), 401
+        
+        @self.app.route('/api/auth/register', methods=['POST'])
+        def register():
+            """User registration endpoint"""
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
+            name = data.get('name')
+            
+            if email and password and name:
+                # Mock registration success
+                return jsonify({'message': 'Registration successful'})
+            
+            return jsonify({'message': 'Missing required fields'}), 400
+        
+        # API routes for dashboard data
+        @self.app.route('/api/telegram/sessions')
+        def get_telegram_sessions():
+            """Get Telegram session information"""
+            return jsonify({
+                'sessions': [
+                    {
+                        'id': 1,
+                        'phone': '+1234567890',
+                        'status': 'connected',
+                        'last_activity': datetime.now().isoformat(),
+                        'channels': ['@forex_signals', '@trading_group']
+                    }
+                ]
+            })
+        
+        @self.app.route('/api/telegram/sessions', methods=['POST'])
+        def add_telegram_session():
+            """Add new Telegram session"""
+            data = request.get_json()
+            return jsonify({'message': 'Session added successfully', 'id': 2})
+        
+        @self.app.route('/api/telegram/sessions/<int:session_id>', methods=['DELETE'])
+        def delete_telegram_session(session_id):
+            """Delete Telegram session"""
+            return jsonify({'message': 'Session deleted successfully'})
+        
+        @self.app.route('/api/telegram/channels')
+        def get_telegram_channels():
+            """Get monitored Telegram channels"""
+            return jsonify({
+                'channels': [
+                    {
+                        'id': 1,
+                        'name': 'Forex Signals Pro',
+                        'url': '@forex_signals',
+                        'enabled': True,
+                        'last_signal': '2024-12-19 14:30:00'
+                    },
+                    {
+                        'id': 2,
+                        'name': 'Gold Trading Group',
+                        'url': '@gold_trading',
+                        'enabled': True,
+                        'last_signal': '2024-12-19 13:45:00'
+                    }
+                ]
+            })
+        
+        @self.app.route('/api/telegram/channels', methods=['POST'])
+        def add_telegram_channel():
+            """Add new Telegram channel"""
+            data = request.get_json()
+            return jsonify({'message': 'Channel added successfully', 'id': 3})
+        
+        @self.app.route('/api/telegram/channels/<int:channel_id>', methods=['DELETE'])
+        def delete_telegram_channel(channel_id):
+            """Delete Telegram channel"""
+            return jsonify({'message': 'Channel deleted successfully'})
+        
+        @self.app.route('/api/mt5/terminals')
+        def get_mt5_terminals():
+            """Get MT5 terminal configurations"""
+            return jsonify({
+                'terminals': [
+                    {
+                        'id': 1,
+                        'name': 'MT5 Demo',
+                        'server': 'MetaQuotes-Demo',
+                        'account': '12345',
+                        'status': 'connected',
+                        'balance': 10000.00,
+                        'equity': 10150.50
+                    },
+                    {
+                        'id': 2,
+                        'name': 'MT5 Live',
+                        'server': 'ICMarkets-Live',
+                        'account': '67890',
+                        'status': 'disconnected',
+                        'balance': 5000.00,
+                        'equity': 4950.00
+                    }
+                ]
+            })
+        
+        @self.app.route('/api/mt5/terminals', methods=['POST'])
+        def add_mt5_terminal():
+            """Add new MT5 terminal"""
+            data = request.get_json()
+            return jsonify({'message': 'Terminal added successfully', 'id': 3})
+        
+        @self.app.route('/api/mt5/terminals/<int:terminal_id>', methods=['DELETE'])
+        def delete_mt5_terminal(terminal_id):
+            """Delete MT5 terminal"""
+            return jsonify({'message': 'Terminal deleted successfully'})
+        
+        @self.app.route('/api/mt5/symbols')
+        def get_symbol_mappings():
+            """Get symbol mappings"""
+            return jsonify({
+                'mappings': [
+                    {'signal_symbol': 'Gold', 'mt5_symbol': 'XAUUSD'},
+                    {'signal_symbol': 'Silver', 'mt5_symbol': 'XAGUSD'},
+                    {'signal_symbol': 'EURUSD', 'mt5_symbol': 'EURUSD'},
+                    {'signal_symbol': 'GBPUSD', 'mt5_symbol': 'GBPUSD'}
+                ]
+            })
+        
+        @self.app.route('/api/analytics/performance')
+        def get_performance_analytics():
+            """Get trading performance analytics"""
+            return jsonify({
+                'total_trades': 45,
+                'win_rate': 68.9,
+                'profit_factor': 1.85,
+                'avg_rr': 2.1,
+                'total_pips': 234,
+                'equity_curve': [
+                    {'date': '2024-12-01', 'equity': 10000},
+                    {'date': '2024-12-02', 'equity': 10150},
+                    {'date': '2024-12-03', 'equity': 10280},
+                    {'date': '2024-12-04', 'equity': 10195},
+                    {'date': '2024-12-05', 'equity': 10345}
+                ]
+            })
+        
+        @self.app.route('/api/strategies')
+        def get_strategies():
+            """Get trading strategies"""
+            return jsonify({
+                'strategies': [
+                    {
+                        'id': 1,
+                        'name': 'Scalper Pro',
+                        'type': 'template',
+                        'active': True,
+                        'win_rate': 72.5,
+                        'trades': 28
+                    },
+                    {
+                        'id': 2,
+                        'name': 'Swing Trader',
+                        'type': 'custom',
+                        'active': False,
+                        'win_rate': 65.2,
+                        'trades': 17
+                    }
+                ]
+            })
+        
+        @self.app.route('/api/strategies', methods=['POST'])
+        def create_strategy():
+            """Create new trading strategy"""
+            data = request.get_json()
+            return jsonify({'message': 'Strategy created successfully', 'id': 4})
+        
+        @self.app.route('/api/strategies/<int:strategy_id>', methods=['PATCH'])
+        def update_strategy(strategy_id):
+            """Update trading strategy"""
+            data = request.get_json()
+            return jsonify({'message': 'Strategy updated successfully'})
+        
+        @self.app.route('/api/analytics/trades')
+        def get_trade_history():
+            """Get trade history for analytics"""
+            return jsonify({
+                'trades': [
+                    {
+                        'id': 1,
+                        'pair': 'EURUSD',
+                        'type': 'BUY',
+                        'entry': 1.0850,
+                        'exit': 1.0920,
+                        'pips': 70,
+                        'profit': 140,
+                        'date': '2024-12-19'
+                    },
+                    {
+                        'id': 2,
+                        'pair': 'XAUUSD',
+                        'type': 'SELL',
+                        'entry': 2018.50,
+                        'exit': 2015.30,
+                        'pips': 32,
+                        'profit': 320,
+                        'date': '2024-12-19'
+                    }
+                ]
+            })
+        
+        @self.app.route('/api/analytics/pairs')
+        def get_pair_performance():
+            """Get currency pair performance analytics"""
+            return jsonify({
+                'pairs': [
+                    {'name': 'EURUSD', 'trades': 15, 'winRate': 73, 'pips': 142},
+                    {'name': 'XAUUSD', 'trades': 12, 'winRate': 67, 'pips': 89},
+                    {'name': 'GBPUSD', 'trades': 8, 'winRate': 75, 'pips': 65},
+                    {'name': 'USDJPY', 'trades': 6, 'winRate': 50, 'pips': -12},
+                    {'name': 'AUDUSD', 'trades': 4, 'winRate': 75, 'pips': 28}
+                ]
+            })
+        
+        @self.app.route('/api/analytics/daily')
+        def get_daily_analytics():
+            """Get daily performance analytics"""
+            return jsonify({
+                'daily': [
+                    {'date': '2024-12-19', 'trades': 5, 'pips': 45, 'profit': 450},
+                    {'date': '2024-12-18', 'trades': 3, 'pips': -12, 'profit': -120},
+                    {'date': '2024-12-17', 'trades': 7, 'pips': 78, 'profit': 780}
+                ]
             })
     
     def setup_socketio_events(self):

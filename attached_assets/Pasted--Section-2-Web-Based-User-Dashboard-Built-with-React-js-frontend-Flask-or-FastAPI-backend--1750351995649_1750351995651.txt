@@ -1,0 +1,113 @@
+🌐 Section 2: Web-Based User Dashboard
+
+Built with: React.js (frontend) + Flask or FastAPI backend + WebSockets for real-time updates
+
+🔧 Core Modules:
+
+Authentication & Licensing
+
+JWT-based secure login and signup system
+
+Password reset, email verification
+
+License status panel (free, trial, Pro, Elite)
+
+Expiry timer with alerts and renewal actions
+
+Telegram Account Manager
+
+Upload .session file or login via bot flow
+
+Display active sessions, session errors, device info
+
+Disconnect or refresh session
+
+Auto reauthentication reminders
+
+Channel & Signal Source Configuration
+
+Add/remove Telegram/Discord/WhatsApp sources
+
+Auto-detect channels and signal providers
+
+Assign rules and parsers per source
+
+Enable/disable per-source signal flow
+
+View last message parsed and actioned
+
+MT5/MT4 Terminal Setup
+
+Add/delete MT5 terminal profiles
+
+Assign risk: fixed lots / % balance / % equity
+
+Enable options like: SL/TP override, BE logic, SL Buffer, trade delay
+
+Map provider names to MT5 symbols (e.g., “Gold” → “XAUUSD”)
+
+Visual routing map: which strategy links to which terminal
+
+Strategy Builder (Beginner + Pro Mode)
+
+Beginner View:
+
+Preset templates (scalper, swing, intraday)
+
+Toggle: Partial TP, SL-to-BE, trailing stop
+
+Pro View:
+
+Per condition logic (IF: pair=XAUUSD + signal=buy THEN: TP1=RR2 + SL=10pips)
+
+Rule preview in JSON or table format
+
+Save/load/share strategies
+
+Performance & Equity Analytics
+
+Dashboard widgets:
+
+Win %, Avg RR, Avg delay
+
+Equity curve per terminal
+
+TP hit map per pair, signal provider
+
+Trade calendar heatmap
+
+Export to CSV or PDF report
+
+Shadow Mode + Test Signal Runner
+
+Enable test-only mode: No real trades
+
+Simulate trade outcomes based on signal feed
+
+Compare vs real trades (if dual account linked)
+
+View profit simulation timeline
+
+Configuration Portability + Sync
+
+Save current config as strategy profile (.json)
+
+Load/import profile or QR from provider
+
+Push config to desktop app on next sync
+
+User Health & Troubleshooting
+
+System health monitor:
+
+Parser version
+
+Last signal time
+
+EA ping latency
+
+Session up/down status
+
+One-click re-sync or recover commands
+
+Logs and alerts from Windows app

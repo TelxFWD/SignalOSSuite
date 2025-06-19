@@ -85,7 +85,7 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [telegramSessions, setTelegramSessions] = useState([]);
   const [mt5Terminals, setMt5Terminals] = useState([]);
-  const { healthData, connected, requestHealthUpdate } = useSocket();
+  const { healthData, connected, requestHealthUpdate, socket } = useSocket();
 
   useEffect(() => {
     // Fetch initial data
@@ -110,7 +110,26 @@ export default function Dashboard() {
 
     // Set up periodic health updates
     const interval = setInterval(requestHealthUpdate, 30000);
-    return () => clearInterval(interval);
+    
+    // Listen for real-time signal updates
+    if (socket) {
+      socket.on('new_signal', (signal) => {
+        console.log('New signal received:', signal);
+        // Update UI with new signal
+      });
+      
+      socket.on('health_update', (data) => {
+        console.log('Health update received:', data);
+      });
+    }
+    
+    return () => {
+      clearInterval(interval);
+      if (socket) {
+        socket.off('new_signal');
+        socket.off('health_update');
+      }
+    };
   }, [requestHealthUpdate]);
 
   const formatCurrency = (amount) => {
@@ -300,9 +319,19 @@ export default function Dashboard() {
                   </ListItem>
                 ))}
               </List>
-              <Button variant="outlined" size="small" sx={{ mt: 1 }}>
-                Add Session
-              </Button>
+              <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                <Button variant="outlined" size="small">
+                  Add Session
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => socket?.emit('simulate_signal')}
+                  disabled={!connected}
+                >
+                  Test Signal
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

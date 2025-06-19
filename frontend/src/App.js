@@ -12,6 +12,7 @@ import StrategyBuilder from './components/Strategy/StrategyBuilder';
 import Analytics from './components/Analytics/Analytics';
 import Settings from './components/Settings/Settings';
 import Layout from './components/Layout/Layout';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import './App.css';
 
 const theme = createTheme({
@@ -70,13 +71,15 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <SocketProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </SocketProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <SocketProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </SocketProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

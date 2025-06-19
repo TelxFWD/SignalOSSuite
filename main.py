@@ -135,6 +135,27 @@ class SignalOSWebApp:
         
         self.setup_routes()
         self.setup_socketio_events()
+    
+    def generate_daily_stats(self):
+        """Generate realistic daily statistics for demo"""
+        import random
+        from datetime import date, timedelta
+        
+        stats = []
+        for i in range(7):
+            day = date.today() - timedelta(days=i)
+            trades = random.randint(0, 8)
+            pips = random.randint(-30, 80) if trades > 0 else 0
+            profit = pips * 10  # $10 per pip
+            
+            stats.append({
+                'date': day.isoformat(),
+                'trades': trades,
+                'pips': pips,
+                'profit': profit
+            })
+        
+        return stats
         
     def setup_routes(self):
         """Setup Flask routes"""
@@ -369,6 +390,26 @@ class SignalOSWebApp:
         @self.app.route('/api/telegram/channels')
         def get_telegram_channels():
             """Get monitored Telegram channels"""
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        channels = db.query(TelegramChannel).all()
+                        channel_data = []
+                        for channel in channels:
+                            channel_data.append({
+                                'id': channel.id,
+                                'name': channel.name,
+                                'url': channel.url,
+                                'enabled': channel.enabled,
+                                'last_signal': channel.last_signal.isoformat() if channel.last_signal else None,
+                                'total_signals': channel.total_signals
+                            })
+                        return jsonify({'channels': channel_data})
+                except Exception as e:
+                    self.logger.error(f"Database error getting channels: {e}")
+            
+            # Fallback data
             return jsonify({
                 'channels': [
                     {
@@ -376,14 +417,16 @@ class SignalOSWebApp:
                         'name': 'Forex Signals Pro',
                         'url': '@forex_signals',
                         'enabled': True,
-                        'last_signal': '2024-12-19 14:30:00'
+                        'last_signal': '2024-12-19 14:30:00',
+                        'total_signals': 25
                     },
                     {
                         'id': 2,
                         'name': 'Gold Trading Group',
                         'url': '@gold_trading',
                         'enabled': True,
-                        'last_signal': '2024-12-19 13:45:00'
+                        'last_signal': '2024-12-19 13:45:00',
+                        'total_signals': 18
                     }
                 ]
             })
@@ -392,6 +435,28 @@ class SignalOSWebApp:
         def add_telegram_channel():
             """Add new Telegram channel"""
             data = request.get_json()
+            
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        # Get first session for demo
+                        session = db.query(TelegramSession).first()
+                        if session:
+                            new_channel = TelegramChannel(
+                                session_id=session.id,
+                                name=data.get('name'),
+                                url=data.get('url'),
+                                enabled=data.get('enabled', True)
+                            )
+                            
+                            db.add(new_channel)
+                            db.commit()
+                            
+                            return jsonify({'message': 'Channel added successfully', 'id': new_channel.id})
+                except Exception as e:
+                    self.logger.error(f"Database error adding channel: {e}")
+            
             return jsonify({'message': 'Channel added successfully', 'id': 3})
         
         @self.app.route('/api/telegram/channels/<int:channel_id>', methods=['DELETE'])
@@ -493,13 +558,43 @@ class SignalOSWebApp:
         @self.app.route('/api/mt5/symbols')
         def get_symbol_mappings():
             """Get symbol mappings"""
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        mappings = db.query(SymbolMapping).all()
+                        mapping_data = []
+                        for mapping in mappings:
+                            mapping_data.append({
+                                'id': mapping.id,
+                                'signal_symbol': mapping.signal_symbol,
+                                'mt5_symbol': mapping.mt5_symbol,
+                                'pip_value': mapping.pip_value
+                            })
+                        return jsonify({'mappings': mapping_data})
+                except Exception as e:
+                    self.logger.error(f"Database error getting mappings: {e}")
+            
+            # Fallback data
             return jsonify({
                 'mappings': [
-                    {'signal_symbol': 'Gold', 'mt5_symbol': 'XAUUSD'},
-                    {'signal_symbol': 'Silver', 'mt5_symbol': 'XAGUSD'},
-                    {'signal_symbol': 'EURUSD', 'mt5_symbol': 'EURUSD'},
-                    {'signal_symbol': 'GBPUSD', 'mt5_symbol': 'GBPUSD'}
+                    {'signal_symbol': 'Gold', 'mt5_symbol': 'XAUUSD', 'pip_value': 0.01},
+                    {'signal_symbol': 'Silver', 'mt5_symbol': 'XAGUSD', 'pip_value': 0.001},
+                    {'signal_symbol': 'EURUSD', 'mt5_symbol': 'EURUSD', 'pip_value': 0.0001},
+                    {'signal_symbol': 'GBPUSD', 'mt5_symbol': 'GBPUSD', 'pip_value': 0.0001}
                 ]
+            })
+        
+        @self.app.route('/api/shadow-mode', methods=['POST'])
+        def toggle_shadow_mode():
+            """Toggle shadow mode for testing"""
+            data = request.get_json()
+            enabled = data.get('enabled', False)
+            
+            # In a real implementation, this would update user settings
+            return jsonify({
+                'message': f"Shadow mode {'enabled' if enabled else 'disabled'}",
+                'shadow_mode': enabled
             })
         
         @self.app.route('/api/analytics/performance')
@@ -523,6 +618,28 @@ class SignalOSWebApp:
         @self.app.route('/api/strategies')
         def get_strategies():
             """Get trading strategies"""
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        strategies = db.query(Strategy).all()
+                        strategy_data = []
+                        for strategy in strategies:
+                            win_rate = (strategy.winning_trades / strategy.total_trades * 100) if strategy.total_trades > 0 else 0
+                            strategy_data.append({
+                                'id': strategy.id,
+                                'name': strategy.name,
+                                'type': strategy.strategy_type,
+                                'active': strategy.active,
+                                'win_rate': round(win_rate, 1),
+                                'trades': strategy.total_trades,
+                                'description': strategy.description
+                            })
+                        return jsonify({'strategies': strategy_data})
+                except Exception as e:
+                    self.logger.error(f"Database error getting strategies: {e}")
+            
+            # Fallback data
             return jsonify({
                 'strategies': [
                     {
@@ -531,7 +648,8 @@ class SignalOSWebApp:
                         'type': 'template',
                         'active': True,
                         'win_rate': 72.5,
-                        'trades': 28
+                        'trades': 28,
+                        'description': 'Quick trades with tight SL/TP'
                     },
                     {
                         'id': 2,
@@ -539,7 +657,8 @@ class SignalOSWebApp:
                         'type': 'custom',
                         'active': False,
                         'win_rate': 65.2,
-                        'trades': 17
+                        'trades': 17,
+                        'description': 'Medium-term position trading'
                     }
                 ]
             })
@@ -548,6 +667,32 @@ class SignalOSWebApp:
         def create_strategy():
             """Create new trading strategy"""
             data = request.get_json()
+            
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        new_strategy = Strategy(
+                            user_id=1,  # Would get from JWT token in real implementation
+                            name=data.get('name'),
+                            description=data.get('description', ''),
+                            strategy_type=data.get('type', 'beginner'),
+                            active=data.get('active', True),
+                            partial_tp=data.get('partialTP', False),
+                            sl_to_be=data.get('slToBE', True),
+                            trailing_stop=data.get('trailingStop', False),
+                            max_risk=data.get('maxRisk', 1.0),
+                            tp_ratio=data.get('tpRatio', 2.0),
+                            custom_rules=json.dumps(data.get('rules', [])) if data.get('rules') else None
+                        )
+                        
+                        db.add(new_strategy)
+                        db.commit()
+                        
+                        return jsonify({'message': 'Strategy created successfully', 'id': new_strategy.id})
+                except Exception as e:
+                    self.logger.error(f"Database error creating strategy: {e}")
+            
             return jsonify({'message': 'Strategy created successfully', 'id': 4})
         
         @self.app.route('/api/strategies/<int:strategy_id>', methods=['PATCH'])
@@ -559,6 +704,16 @@ class SignalOSWebApp:
         @self.app.route('/api/analytics/trades')
         def get_trade_history():
             """Get trade history for analytics"""
+            try:
+                # Load demo trades if available
+                if os.path.exists('demo_trades.json'):
+                    with open('demo_trades.json', 'r') as f:
+                        trades = json.load(f)
+                    return jsonify({'trades': trades})
+            except Exception as e:
+                self.logger.error(f"Error loading demo trades: {e}")
+            
+            # Fallback data
             return jsonify({
                 'trades': [
                     {
@@ -601,11 +756,7 @@ class SignalOSWebApp:
         def get_daily_analytics():
             """Get daily performance analytics"""
             return jsonify({
-                'daily': [
-                    {'date': '2024-12-19', 'trades': 5, 'pips': 45, 'profit': 450},
-                    {'date': '2024-12-18', 'trades': 3, 'pips': -12, 'profit': -120},
-                    {'date': '2024-12-17', 'trades': 7, 'pips': 78, 'profit': 780}
-                ]
+                'daily': self.generate_daily_stats()
             })
     
     def setup_socketio_events(self):
@@ -624,6 +775,43 @@ class SignalOSWebApp:
         def handle_get_health():
             health_data = self.health_monitor.get_health_summary()
             emit('health_update', health_data)
+        
+        @self.socketio.on('simulate_signal')
+        def handle_simulate_signal():
+            """Simulate a new trading signal for testing"""
+            try:
+                # Load demo signals if available
+                import json
+                try:
+                    with open('demo_signals.json', 'r') as f:
+                        signals = json.load(f)
+                        if signals:
+                            signal = signals[0]  # Get first signal
+                            emit('new_signal', signal)
+                            self.logger.info(f"Simulated signal: {signal['pair']} {signal['action']}")
+                except FileNotFoundError:
+                    # Generate random signal if no demo file
+                    import random
+                    pairs = ['EURUSD', 'GBPUSD', 'XAUUSD', 'USDJPY']
+                    pair = random.choice(pairs)
+                    action = random.choice(['BUY', 'SELL'])
+                    entry = round(random.uniform(1.08, 1.12), 4)
+                    
+                    signal = {
+                        'pair': pair,
+                        'action': action,
+                        'entry': entry,
+                        'sl': round(entry - 0.002 if action == 'BUY' else entry + 0.002, 4),
+                        'tp': round(entry + 0.003 if action == 'BUY' else entry - 0.003, 4),
+                        'timestamp': datetime.now().isoformat(),
+                        'provider': 'Demo Signals',
+                        'confidence': round(random.uniform(0.7, 0.95), 2),
+                        'raw_text': f"{action} {pair} @ {entry}"
+                    }
+                    emit('new_signal', signal)
+            except Exception as e:
+                self.logger.error(f"Error simulating signal: {e}")
+                emit('error', {'message': 'Failed to simulate signal'})
     
     def render_dashboard(self):
         """Render the main dashboard"""

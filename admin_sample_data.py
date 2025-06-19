@@ -164,7 +164,14 @@ def create_admin_sample_data():
                 'telegram_channel': '@forexsignalspro',
                 'website_url': 'https://forexsignalspro.com',
                 'verified': True,
-                'active': True
+                'active': True,
+                'featured': True,
+                'success_rate': 0.847,
+                'total_signals': 1247,
+                'subscribers': 342,
+                'avg_rr': 2.1,
+                'avg_execution_speed': 2.3,
+                'entry_sl_drift': 0.15
             },
             {
                 'name': 'Gold Trading Experts',
@@ -172,14 +179,28 @@ def create_admin_sample_data():
                 'telegram_channel': '@goldtradingexperts',
                 'website_url': 'https://goldexperts.com',
                 'verified': True,
-                'active': True
+                'active': True,
+                'featured': False,
+                'success_rate': 0.769,
+                'total_signals': 892,
+                'subscribers': 178,
+                'avg_rr': 1.8,
+                'avg_execution_speed': 3.1,
+                'entry_sl_drift': 0.22
             },
             {
                 'name': 'Crypto Forex Hub',
                 'description': 'Multi-asset trading signals',
                 'telegram_channel': '@cryptoforexhub',
                 'verified': False,
-                'active': True
+                'active': True,
+                'featured': False,
+                'success_rate': 0.623,
+                'total_signals': 567,
+                'subscribers': 89,
+                'avg_rr': 1.5,
+                'avg_execution_speed': 4.7,
+                'entry_sl_drift': 0.38
             }
         ]
         

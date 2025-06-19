@@ -11,7 +11,7 @@ import json
 from app import app, db
 from models import (User, AdminUser, LicensePlan, UserLicense, ParserModel, SignalProvider, 
                    SystemLog, NotificationTemplate, TelegramSession, TelegramChannel, 
-                   MT5Terminal, Strategy, Signal, Trade, SystemHealth)
+                   MT5Terminal, Strategy, Signal, Trade, SystemHealth, SignalStatus, SignalAction)
 
 
 def require_admin():
@@ -211,6 +211,134 @@ def admin_providers():
     
     providers = SignalProvider.query.all()
     return render_template('admin_providers.html', providers=providers)
+
+
+# Admin API endpoints for signal debugging
+@app.route('/admin/api/signals/<int:signal_id>/reparse', methods=['POST'])
+def admin_reparse_signal(signal_id):
+    """Re-parse a signal for admin debugging"""
+    if not require_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        signal = Signal.query.get_or_404(signal_id)
+        
+        # Log the reparse action
+        log = SystemLog(
+            level='INFO',
+            category='ADMIN',
+            message=f'Admin re-parsing signal {signal_id}: {signal.raw_text[:50]}...',
+            user_id=session.get('admin_user_id'),
+            signal_id=signal_id
+        )
+        db.session.add(log)
+        
+        # Reset signal status and update processed time
+        signal.status = SignalStatus.PENDING
+        signal.processed_at = datetime.utcnow()
+        signal.error_message = None
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Signal queued for re-parsing'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/signals/<int:signal_id>/reexecute', methods=['POST'])
+def admin_reexecute_signal(signal_id):
+    """Re-execute a signal for admin debugging"""
+    if not require_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        signal = Signal.query.get_or_404(signal_id)
+        
+        # Log the reexecution action
+        log = SystemLog(
+            level='INFO',
+            category='ADMIN',
+            message=f'Admin re-executing signal {signal_id}: {signal.parsed_pair} {signal.parsed_action}',
+            user_id=session.get('admin_user_id'),
+            signal_id=signal_id
+        )
+        db.session.add(log)
+        
+        # Update signal status
+        signal.status = SignalStatus.PROCESSING
+        signal.executed_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Signal queued for re-execution'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/signals/<int:signal_id>/resolve', methods=['POST'])
+def admin_resolve_signal(signal_id):
+    """Mark a signal as resolved for admin debugging"""
+    if not require_admin():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
+    try:
+        signal = Signal.query.get_or_404(signal_id)
+        
+        # Log the resolution
+        log = SystemLog(
+            level='INFO',
+            category='ADMIN',
+            message=f'Admin marked signal {signal_id} as resolved',
+            user_id=session.get('admin_user_id'),
+            signal_id=signal_id
+        )
+        db.session.add(log)
+        
+        # Mark as resolved
+        signal.status = SignalStatus.EXECUTED
+        signal.error_message = "Manually resolved by admin"
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Signal marked as resolved'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/api/signals/<int:signal_id>/logs')
+def admin_export_signal_logs(signal_id):
+    """Export logs for a specific signal"""
+    if not require_admin():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        signal = Signal.query.get_or_404(signal_id)
+        logs = SystemLog.query.filter_by(signal_id=signal_id).order_by(SystemLog.timestamp.desc()).all()
+        
+        log_data = {
+            'signal_id': signal_id,
+            'signal_details': {
+                'raw_text': signal.raw_text,
+                'parsed_pair': signal.parsed_pair,
+                'parsed_action': signal.parsed_action,
+                'confidence_score': signal.confidence_score,
+                'status': signal.status.value if signal.status else None,
+                'received_at': signal.received_at.isoformat() if signal.received_at else None
+            },
+            'logs': [
+                {
+                    'timestamp': log.timestamp.isoformat(),
+                    'level': log.level,
+                    'category': log.category,
+                    'message': log.message
+                }
+                for log in logs
+            ]
+        }
+        
+        return jsonify(log_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/admin/settings')

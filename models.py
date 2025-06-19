@@ -317,6 +317,16 @@ class SignalProvider(db.Model):
     contact_info = db.Column(db.Text)
     verified = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=True)
+    featured = db.Column(db.Boolean, default=False)
+    
+    # Performance metrics
+    success_rate = db.Column(db.Float, default=0.0)
+    total_signals = db.Column(db.Integer, default=0)
+    subscribers = db.Column(db.Integer, default=0)
+    avg_rr = db.Column(db.Float, default=0.0)  # Average Risk:Reward ratio
+    avg_execution_speed = db.Column(db.Float, default=0.0)  # in seconds
+    entry_sl_drift = db.Column(db.Float, default=0.0)  # percentage
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SystemLog(db.Model):

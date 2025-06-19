@@ -1,0 +1,109 @@
+# SignalOS Desktop Application
+
+## Overview
+
+SignalOS is a next-generation Forex signal automation platform designed as a Windows desktop application. It provides an all-in-one solution for retail and funded traders to receive, parse, and execute trading signals from multiple sources including Telegram, Discord, and WhatsApp. The application features AI-powered signal parsing, MetaTrader 5 integration, and real-time monitoring capabilities.
+
+## System Architecture
+
+### Frontend Architecture
+- **GUI Framework**: PySide2 (Qt for Python) providing native Windows desktop interface
+- **Application Type**: Self-contained desktop application with modular widget-based architecture
+- **Main Components**:
+  - Main Window with tabbed interface
+  - Dashboard for signal monitoring and statistics
+  - Configuration panels for various integrations
+  - Health monitoring and system diagnostics
+  - Authentication dialog for user management
+
+### Backend Architecture
+- **Core Engine**: Python-based modular architecture with separate components for:
+  - Signal listening and collection
+  - AI-powered signal parsing
+  - Signal execution engine
+  - MetaTrader 5 synchronization
+  - Health monitoring system
+- **Communication**: File-based communication with MT5 through JSON signal files
+- **Threading**: Multi-threaded design with worker threads for background operations
+
+### Configuration Management
+- **Settings System**: Centralized configuration using dataclasses
+- **File Storage**: Local configuration files stored in user's home directory
+- **Backup System**: Automatic configuration backups with restore capabilities
+
+## Key Components
+
+### 1. Signal Processing Pipeline
+- **Raw Signal Collection**: Multi-source signal ingestion (Telegram, Discord, WhatsApp)
+- **AI Parser**: NLP-powered signal parsing using spaCy and custom regex patterns
+- **OCR Support**: Image-based signal extraction using EasyOCR
+- **Signal Engine**: Processes parsed signals and generates execution commands
+
+### 2. External Integrations
+- **Telegram Integration**: Telethon-based listener for real-time channel monitoring
+- **MetaTrader 5 Sync**: File-based communication system for trade execution
+- **Authentication**: JWT-based user authentication with cloud API integration
+
+### 3. User Interface Components
+- **Dashboard**: Real-time signal monitoring and statistics
+- **Configuration Panels**: Setup wizards for Telegram, MT5, and parser settings
+- **Health Monitor**: System status and performance monitoring
+- **Login System**: Secure user authentication with token management
+
+### 4. Core Services
+- **Logger**: Comprehensive logging system with file rotation
+- **Health Monitor**: System diagnostics and performance tracking
+- **Config Manager**: Settings management with backup/restore capabilities
+
+## Data Flow
+
+1. **Signal Collection**: External sources (Telegram channels) → Raw signals
+2. **Signal Processing**: Raw signals → AI Parser → Parsed signals
+3. **Signal Validation**: Parsed signals → Validation engine → Execution signals
+4. **Trade Execution**: Execution signals → JSON files → MetaTrader 5 EA
+5. **Monitoring**: All stages monitored through health system and dashboard
+
+## External Dependencies
+
+### Core Dependencies
+- **PySide2**: GUI framework for desktop interface
+- **Telethon**: Telegram API integration
+- **spaCy**: Natural language processing for signal parsing
+- **EasyOCR**: Optical character recognition for image signals
+- **psutil**: System monitoring and resource tracking
+- **requests**: HTTP client for API communications
+- **PyJWT**: JWT token handling for authentication
+
+### Development Dependencies
+- **PyInstaller**: Application packaging for Windows distribution
+- **pytest**: Testing framework (implied for production)
+
+### System Requirements
+- Python 3.11+
+- Windows operating system (primary target)
+- MetaTrader 5 terminal (for trade execution)
+
+## Deployment Strategy
+
+### Development Phase
+- **Environment**: Replit for modular development and testing
+- **Package Management**: Standard pip with requirements.txt approach
+- **Testing**: Local development with MT5 demo accounts
+
+### Production Deployment
+- **Packaging**: PyInstaller for standalone Windows executable
+- **Distribution**: Direct download from SaaS platform
+- **Updates**: Automatic update mechanism through central API
+- **Installation**: Self-contained installer with minimal dependencies
+
+### Configuration Management
+- **Local Storage**: User configuration in `~/.signalos/` directory
+- **Cloud Sync**: Optional configuration synchronization with SaaS backend
+- **Backup Strategy**: Local backups with cloud storage integration
+
+## Changelog
+- June 19, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.

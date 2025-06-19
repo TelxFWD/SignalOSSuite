@@ -1,0 +1,63 @@
+🧠 Context:
+You're working on the SignalOS Forex signal automation system. The current UI is functional but lacks modern UX polish and visual clarity. You also want to reorganize all files related to the Windows Application (parser, EA sync, MT5 logic, GUI, Telethon session manager, etc.) into a clean subfolder for future packaging and deployment.
+
+🎯 Objective:
+1. Improve UI layout, color, padding, and component styling to create a more professional, premium-looking dark dashboard.
+2. Refactor the directory structure to group all desktop app (Windows App) logic under a single parent folder (e.g., `/desktop_app/`).
+3. Ensure everything still runs after restructuring.
+
+---
+
+🎨 UI Fixes to Implement:
+- Use **modern card layout** with spacing between each metric (trades, pips, PnL)
+- Apply **consistent padding/margin** between rows and panels
+- Replace system status ✅ with a colored badge (🟢🟡🔴)
+- Improve **system health panel** with inline icons (✅, ❌, ⚠️)
+- Use a **two-column layout** with flexible grid instead of stacked blocks
+- Add optional **icon buttons** for quick actions (FontAwesome, Lucide, or similar)
+- Convert all buttons to a consistent rounded style
+- Add hover effect on sidebar and action buttons
+- Fix typography: bigger heading, consistent font sizes
+
+Optional:
+- Add charts or gauges to show drawdown, uptime, or equity if backend permits
+
+---
+
+📁 Folder Refactor Instructions:
+1. Move all files related to the Windows App into `/desktop_app/`, including:
+   - core/, gui/, models/, utils/, config/, assets/, instance/
+   - main.py, app.py, models.py, signalos_test_*.py, test_*.py
+2. Create a root-level `run.py` that imports from `desktop_app/` and runs main()
+3. Update imports in all Python files to reflect the new paths (e.g., `from desktop_app.core.mt5_sync import write_signal`)
+4. Confirm that:
+   - GUI opens correctly
+   - Parser loads
+   - MT5 signal.json output still works
+   - Logs are generated
+
+---
+
+🔐 Post-Restructure:
+- Confirm new structure:
+  /desktop_app/
+    └── core/
+    └── gui/
+    └── config/
+    └── main.py
+  /tests/
+    └── test_dashboard.py
+    └── test_parser.py
+  run.py
+
+- Ensure `.spec` or PyInstaller config points to new app entry (`desktop_app.main` or `run.py`)
+
+---
+
+📦 Deliverables:
+- Screenshot of the improved dashboard UI
+- Confirmed file tree after restructure
+- Updated imports and entry points
+- Optional: PyInstaller `.spec` updated
+
+🎯 Goal: Clean UI + modular project structure = Ready for packaging and next-phase development

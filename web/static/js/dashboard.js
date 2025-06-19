@@ -203,16 +203,16 @@ class SignalOSDashboard {
                     <div class="stat-value">${todayStats.trades}</div>
                     <div class="stat-label">Trades Today</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value">${todayStats.pips}</div>
+                <div class="stat-card ${todayStats.pips >= 0 ? 'positive' : 'negative'}">
+                    <div class="stat-value">${todayStats.pips >= 0 ? '+' : ''}${todayStats.pips}</div>
                     <div class="stat-label">Total Pips</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value">$${todayStats.profit}</div>
+                <div class="stat-card ${todayStats.profit >= 0 ? 'positive' : 'negative'}">
+                    <div class="stat-value">${todayStats.profit >= 0 ? '+' : ''}$${Math.abs(todayStats.profit)}</div>
                     <div class="stat-label">Profit/Loss</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${health.status === 'healthy' ? '✅' : '❌'}</div>
+                    <div class="stat-value">${health.status === 'healthy' ? '🟢' : '🔴'}</div>
                     <div class="stat-label">System Status</div>
                 </div>
             </div>

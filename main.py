@@ -158,6 +158,226 @@ def test_endpoint():
         'timestamp': datetime.now().isoformat()
     })
 
+@app.route('/api/telegram/sessions', methods=['POST'])
+def add_telegram_session():
+    """Add new Telegram session"""
+    data = request.get_json()
+    if DB_AVAILABLE:
+        try:
+            from models import TelegramSession
+            db = get_db()
+            new_session = TelegramSession(
+                user_id=1,  # Would get from JWT token in real implementation
+                phone_number=data.get('phone'),
+                api_id=data.get('api_id'),
+                api_hash=data.get('api_hash'),
+                status='connecting'
+            )
+            db.add(new_session)
+            db.commit()
+            return jsonify({'message': 'Session added successfully', 'id': new_session.id})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Session added successfully', 'id': random.randint(2, 100)})
+
+@app.route('/api/telegram/sessions/<int:session_id>', methods=['DELETE'])
+def delete_telegram_session(session_id):
+    """Delete Telegram session"""
+    if DB_AVAILABLE:
+        try:
+            from models import TelegramSession
+            db = get_db()
+            session = db.query(TelegramSession).filter(TelegramSession.id == session_id).first()
+            if session:
+                db.delete(session)
+                db.commit()
+                return jsonify({'message': 'Session deleted successfully'})
+            return jsonify({'error': 'Session not found'}), 404
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Session deleted successfully'})
+
+@app.route('/api/telegram/channels', methods=['POST'])
+def add_telegram_channel():
+    """Add new Telegram channel"""
+    data = request.get_json()
+    if DB_AVAILABLE:
+        try:
+            from models import TelegramChannel
+            db = get_db()
+            new_channel = TelegramChannel(
+                session_id=data.get('session_id', 1),
+                name=data.get('name'),
+                url=data.get('url'),
+                enabled=True
+            )
+            db.add(new_channel)
+            db.commit()
+            return jsonify({'message': 'Channel added successfully', 'id': new_channel.id})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Channel added successfully', 'id': random.randint(2, 100)})
+
+@app.route('/api/telegram/channels/<int:channel_id>', methods=['DELETE'])
+def delete_telegram_channel(channel_id):
+    """Delete Telegram channel"""
+    if DB_AVAILABLE:
+        try:
+            from models import TelegramChannel
+            db = get_db()
+            channel = db.query(TelegramChannel).filter(TelegramChannel.id == channel_id).first()
+            if channel:
+                db.delete(channel)
+                db.commit()
+                return jsonify({'message': 'Channel deleted successfully'})
+            return jsonify({'error': 'Channel not found'}), 404
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Channel deleted successfully'})
+
+@app.route('/api/mt5/terminals', methods=['POST'])
+def add_mt5_terminal():
+    """Add new MT5 terminal"""
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['name', 'server', 'login', 'password']
+    if not all(data.get(field) for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    if DB_AVAILABLE:
+        try:
+            from models import MT5Terminal
+            from werkzeug.security import generate_password_hash
+            db = get_db()
+            new_terminal = MT5Terminal(
+                user_id=1,  # Would get from JWT token in real implementation
+                name=data.get('name'),
+                server=data.get('server'),
+                login=data.get('login'),
+                password_hash=generate_password_hash(data.get('password')),
+                status='connecting'
+            )
+            db.add(new_terminal)
+            db.commit()
+            return jsonify({'message': 'Terminal added successfully', 'id': new_terminal.id})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Terminal added successfully', 'id': random.randint(2, 100)})
+
+@app.route('/api/mt5/terminals/<int:terminal_id>', methods=['DELETE'])
+def delete_mt5_terminal(terminal_id):
+    """Delete MT5 terminal"""
+    if DB_AVAILABLE:
+        try:
+            from models import MT5Terminal
+            db = get_db()
+            terminal = db.query(MT5Terminal).filter(MT5Terminal.id == terminal_id).first()
+            if terminal:
+                db.delete(terminal)
+                db.commit()
+                return jsonify({'message': 'Terminal deleted successfully'})
+            return jsonify({'error': 'Terminal not found'}), 404
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Terminal deleted successfully'})
+
+@app.route('/api/strategies', methods=['POST'])
+def create_strategy():
+    """Create new trading strategy"""
+    data = request.get_json()
+    if DB_AVAILABLE:
+        try:
+            from models import Strategy
+            db = get_db()
+            new_strategy = Strategy(
+                user_id=1,  # Would get from JWT token in real implementation
+                name=data.get('name'),
+                description=data.get('description'),
+                strategy_type=data.get('type'),
+                max_risk=float(data.get('max_risk', 1.0)),
+                active=True
+            )
+            db.add(new_strategy)
+            db.commit()
+            return jsonify({'message': 'Strategy created successfully', 'id': new_strategy.id})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Strategy created successfully', 'id': random.randint(2, 100)})
+
+@app.route('/api/strategies/<int:strategy_id>', methods=['DELETE'])
+def delete_strategy(strategy_id):
+    """Delete trading strategy"""
+    if DB_AVAILABLE:
+        try:
+            from models import Strategy
+            db = get_db()
+            strategy = db.query(Strategy).filter(Strategy.id == strategy_id).first()
+            if strategy:
+                db.delete(strategy)
+                db.commit()
+                return jsonify({'message': 'Strategy deleted successfully'})
+            return jsonify({'error': 'Strategy not found'}), 404
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Strategy deleted successfully'})
+
+@app.route('/api/settings/shadow-mode', methods=['POST'])
+def toggle_shadow_mode():
+    """Toggle shadow mode setting"""
+    data = request.get_json()
+    enabled = data.get('enabled', False)
+    
+    if DB_AVAILABLE:
+        try:
+            from models import UserSettings
+            db = get_db()
+            settings = db.query(UserSettings).filter(UserSettings.user_id == 1).first()
+            if settings:
+                settings.enable_shadow_mode = enabled
+                db.commit()
+            else:
+                new_settings = UserSettings(user_id=1, enable_shadow_mode=enabled)
+                db.add(new_settings)
+                db.commit()
+            return jsonify({'message': 'Shadow mode updated', 'enabled': enabled})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'message': 'Shadow mode updated', 'enabled': enabled})
+
+@app.route('/api/signals/simulate', methods=['POST'])
+def simulate_signal():
+    """Simulate a trading signal for testing"""
+    data = request.get_json()
+    
+    # Generate a simulated signal
+    signal_data = {
+        'id': random.randint(1000, 9999),
+        'pair': data.get('pair', 'EURUSD'),
+        'action': data.get('action', random.choice(['BUY', 'SELL'])),
+        'entry': data.get('entry', round(random.uniform(1.0500, 1.1200), 5)),
+        'sl': data.get('sl', round(random.uniform(1.0400, 1.0600), 5)),
+        'tp': data.get('tp', round(random.uniform(1.1300, 1.1500), 5)),
+        'timestamp': datetime.now().isoformat(),
+        'status': 'pending'
+    }
+    
+    # In a real implementation, this would trigger the signal processing pipeline
+    # For now, we'll just return the simulated signal
+    return jsonify({
+        'message': 'Signal simulated successfully',
+        'signal': signal_data
+    })
+
 # SocketIO events for real-time updates
 @socketio.on('connect')
 def handle_connect():

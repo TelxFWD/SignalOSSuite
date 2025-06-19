@@ -1,0 +1,56 @@
+🧠 Context:
+You’re reviewing and debugging **Section Two: Web-Based User Dashboard** of the SignalOS Project. The dashboard is built with React.js (frontend) and connects to a Flask/FastAPI backend. It is responsible for user onboarding, channel and terminal setup, strategy management, health monitoring, and analytics.
+
+🎯 Objective:
+1. Detect and fix all **bugs, UI glitches, or logic inconsistencies**
+2. Compare against the expected roadmap features below
+3. Ensure **each user function works correctly and securely**
+4. Finalize Section Two for production or integration with the Windows App
+
+🔍 Modules to Review & Audit:
+1. ✅ User Authentication & License Manager
+2. ✅ Telegram Session Management (.session file or QR login)
+3. ✅ Channel Detection & Signal Source Configuration
+4. ✅ MT5/MT4 Terminal Setup & Mapping
+5. ✅ Beginner/Pro Strategy Builder UI
+6. ✅ Performance & Equity Analytics Dashboard
+7. ✅ Shadow Mode + Simulated Testing
+8. ✅ Strategy Import/Export (.json or QR)
+9. ✅ Health Monitoring & Troubleshooting Panel
+
+🔧 Checklist of Features to Verify & Complete:
+- [ ] All dashboard forms (MT5, strategy, channel) are saving correctly to backend
+- [ ] Strategy builder generates valid and structured logic output
+- [ ] Telegram sessions persist correctly and show channel activity
+- [ ] Channel-to-terminal mapping reflects correctly in backend state
+- [ ] Shadow Mode executes logic without affecting real accounts
+- [ ] Config import/export (JSON or QR) works end-to-end
+- [ ] Health UI shows parser/EA status, signal errors, and sync time
+- [ ] WebSocket or polling updates signal feed live
+- [ ] Responsive UI layout works for mobile and tablet
+- [ ] Proper error states and recovery for session, backend failure, or MT5 desync
+
+🛠 What You Should Do:
+1. Run full test cycle:
+   - Login → Add Telegram → Add Channel → Create Strategy → Connect MT5 → Simulate Signal
+2. Trigger edge cases:
+   - No MT5 terminal selected
+   - Invalid strategy
+   - Broken or disconnected Telegram session
+3. Check logs and browser console for:
+   - API failures
+   - Signal not reaching health panel
+   - Wrong or missing configs
+4. Fix missing functionality or inconsistencies:
+   - Save buttons not working
+   - Default rules not applying to new providers
+   - UI state not syncing with backend
+
+📦 Output:
+- ✅ Summary of fixed bugs
+- ✅ List of missing or completed features
+- ✅ Screenshots of updated dashboard (optional)
+- ✅ Recommendations for optimization (UI/UX, API efficiency)
+
+🧪 Bonus (Optional):
+Add a dummy parser model + fake signals to simulate signal load and UI state flow during demo/test mode.

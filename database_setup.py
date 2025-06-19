@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 Database setup and initialization script for SignalOS
+Creates necessary tables and sample data for the application
 """
+import os
+from datetime import datetime
+from werkzeug.security import generate_password_hash
 
 import os
 import sys
@@ -28,6 +32,126 @@ except ImportError as e:
 
 def create_sample_data():
     """Create sample data for testing and demonstration"""
+    from app import app, db
+    from models import (
+        User, TelegramSession, TelegramChannel, MT5Terminal, 
+        Strategy, UserSettings, SymbolMapping
+    )
+    
+    with app.app_context():
+        # Create demo user first
+        demo_user = User(
+            email='demo@signalos.com',
+            name='Demo User',
+            password_hash=generate_password_hash('demo'),
+            license_type='Pro',
+            active=True
+        )
+        
+        try:
+            db.session.add(demo_user)
+            db.session.commit()
+            print("Created demo user successfully")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Demo user might already exist: {e}")
+        
+        # Get the user (either newly created or existing)
+        user = db.session.query(User).filter(User.email == 'demo@signalos.com').first()
+        if not user:
+            print("Failed to create or find demo user")
+            return
+        
+        # Create sample Telegram session
+        if not db.session.query(TelegramSession).filter(TelegramSession.user_id == user.id).first():
+            telegram_session = TelegramSession(
+                user_id=user.id,
+                phone_number='+1234567890',
+                api_id='12345',
+                api_hash='sample_hash',
+                status='connected'
+            )
+            db.session.add(telegram_session)
+            print("Created sample Telegram session")
+        
+        # Create sample channel
+        session = db.session.query(TelegramSession).filter(TelegramSession.user_id == user.id).first()
+        if session and not db.session.query(TelegramChannel).filter(TelegramChannel.session_id == session.id).first():
+            channel = TelegramChannel(
+                session_id=session.id,
+                name='Forex Signals',
+                url='@forex_signals',
+                enabled=True,
+                total_signals=45
+            )
+            db.session.add(channel)
+            print("Created sample Telegram channel")
+        
+        # Create sample MT5 terminal
+        if not db.session.query(MT5Terminal).filter(MT5Terminal.user_id == user.id).first():
+            terminal = MT5Terminal(
+                user_id=user.id,
+                name='Demo Terminal',
+                server='MetaQuotes-Demo',
+                login='12345',
+                password_hash=generate_password_hash('demo_password'),
+                status='connected',
+                balance=10000.0,
+                equity=10250.0
+            )
+            db.session.add(terminal)
+            print("Created sample MT5 terminal")
+        
+        # Create sample strategy
+        if not db.session.query(Strategy).filter(Strategy.user_id == user.id).first():
+            strategy = Strategy(
+                user_id=user.id,
+                name='Conservative Strategy',
+                description='Safe trading strategy for beginners',
+                strategy_type='beginner',
+                max_risk=1.0,
+                total_trades=23,
+                winning_trades=18,
+                total_pips=145.5,
+                total_profit=1455.0,
+                active=True
+            )
+            db.session.add(strategy)
+            print("Created sample strategy")
+        
+        # Create user settings
+        if not db.session.query(UserSettings).filter(UserSettings.user_id == user.id).first():
+            settings = UserSettings(
+                user_id=user.id,
+                theme='dark',
+                language='en',
+                default_risk=1.0,
+                max_daily_loss=5.0,
+                enable_shadow_mode=False
+            )
+            db.session.add(settings)
+            print("Created user settings")
+        
+        # Create symbol mappings
+        if not db.session.query(SymbolMapping).first():
+            mappings = [
+                SymbolMapping(signal_symbol='EURUSD', mt5_symbol='EURUSD', pip_value=0.0001),
+                SymbolMapping(signal_symbol='GBPUSD', mt5_symbol='GBPUSD', pip_value=0.0001),
+                SymbolMapping(signal_symbol='USDJPY', mt5_symbol='USDJPY', pip_value=0.01),
+                SymbolMapping(signal_symbol='XAUUSD', mt5_symbol='XAUUSD', pip_value=0.01),
+                SymbolMapping(signal_symbol='GOLD', mt5_symbol='XAUUSD', pip_value=0.01),
+            ]
+            
+            for mapping in mappings:
+                db.session.add(mapping)
+            print("Created symbol mappings")
+        
+        try:
+            db.session.commit()
+            print("Sample data created successfully")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating sample data: {e}")
     db = next(get_db())
     
     try:

@@ -1,0 +1,119 @@
+🌟 SignalOS: SaaS + Windows App Ecosystem
+
+🔍 Executive Summary
+
+SignalOS is a next-generation, all-in-one Forex signal automation platform designed to:
+
+Provide retail and funded traders with unparalleled execution speed
+
+Support AI/ML-powered signal parsing from Telegram, Discord, WhatsApp, and more
+
+Deliver full stealth compatibility with prop firms
+
+Offer rich analytics, strategy-building tools, and multi-account logic
+
+Enable signal providers to scale, brand, and monetize their strategies
+
+The system runs as:
+
+A centralized SaaS Dashboard (Admin/User Web Panel)
+
+A smart, self-contained Windows Desktop App (EA + Parser + Signal Engine)
+
+A robust Backend API with Replit Agents integration
+
+🚀 Project Development Guide with Replit Agents (Phased Approach)
+
+⚙️ Development & Hosting Strategy:
+
+Phase 1 (Replit Build): Use Replit Agents for modular development in parts
+
+Phase 2 (Testing): Test EA, parser, and dashboard sync on local/dev VPS
+
+Phase 3 (Production Hosting): Deploy backend (API + DB + Admin Panel) on live VPS/cloud (Render/AWS/Contabo)
+
+🧱 Project Breakdown by Sections (Detailed)
+
+🖥 Section 1: Windows Desktop App (SignalOS Core)
+
+Built with: Python (PySide2 or PyQt5 GUI) + Telethon + PyInstaller
+
+🔧 Core Components:
+
+Telethon-based Telegram Listener
+
+AI/NLP signal parser (offline + syncable)
+
+Signal.json generator + EA connector
+
+Instant MT5 Sync System™
+
+Config Manager, Watchdog, and Logger
+
+✅ Detailed Features:
+
+User Login + Config Sync
+
+JWT/Auth token login
+
+Sync strategies, parser model, MT5 setup, channels
+
+Telegram Integration
+
+Add/Remove Telegram sessions (.session / QR / API key)
+
+Channel discovery, auto-join monitor
+
+Signal Parser
+
+Integrated AI model (spaCy/distilBERT)
+
+OCR for image-based signals (EasyOCR or PaddleOCR)
+
+Parser fallback rule system for critical signals
+
+Signal Execution Engine
+
+Convert structured data into signal.json
+
+Handles all trade types: buy, sell, limit, SL-to-BE, partial close, edits
+
+Multi-TP, SL buffer (1–10 pip logic), BE/TP logic
+
+Prop-firm stealth: delay, remove SL/TP/comments
+
+EA Sync System
+
+Scan and detect installed MT5 terminals
+
+Auto-inject EA + sync path to Experts folder
+
+Heartbeat ping exchange with EA to confirm readiness
+
+Auto-restart EA + MT5 if no response within timeout
+
+Health + Recovery Monitor
+
+UI panel shows real-time:
+
+Parser status
+
+EA status
+
+Signal queue
+
+Sync status
+
+Logs crash/errors + suggest one-click fix
+
+Config Portability
+
+Import/export .json strategy bundles
+
+Backup Telegram + terminal session link
+
+Shadow/Offline Mode
+
+Simulates signals without executing them
+
+Log simulated P/L for backtesting . Only Devlop Section 1 Section 2& 3 Will Be shared once Section one Is Devloped Properly

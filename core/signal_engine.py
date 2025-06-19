@@ -9,9 +9,35 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from dataclasses import asdict
 
-from config.settings import AppSettings
-settings = AppSettings()
-from models.signal_model import ParsedSignal, ExecutionSignal, SignalStatus
+try:
+    from config.settings import AppSettings
+    settings = AppSettings()
+except ImportError:
+    # Mock settings when not available
+    class MockSettings:
+        def __init__(self):
+            self.app_dir = "/tmp/signalos"
+            self.execution = type('obj', (object,), {'enabled': True})()
+    settings = MockSettings()
+try:
+    from models.signal_model import ParsedSignal, ExecutionSignal, SignalStatus
+except ImportError:
+    # Mock signal models when not available
+    class SignalStatus:
+        PENDING = "pending"
+        PROCESSING = "processing"
+        EXECUTED = "executed"
+        FAILED = "failed"
+    
+    class ParsedSignal:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+    
+    class ExecutionSignal:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 import logging
 
 logger = logging.getLogger(__name__)

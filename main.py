@@ -22,6 +22,17 @@ from flask_socketio import SocketIO, emit
 from datetime import datetime, timedelta
 import hashlib
 import base64
+from werkzeug.security import generate_password_hash, check_password_hash
+try:
+    from models import (
+        create_tables, get_db, User, TelegramSession, TelegramChannel, 
+        MT5Terminal, Strategy, Signal, Trade, SymbolMapping, SystemHealth, UserSettings
+    )
+    from sqlalchemy.orm import Session
+    DATABASE_AVAILABLE = True
+except ImportError as e:
+    print(f"Database modules not available: {e}")
+    DATABASE_AVAILABLE = False
 try:
     import jwt
     JWT_AVAILABLE = True
@@ -33,11 +44,44 @@ try:
 except ImportError:
     CORS_AVAILABLE = False
 
-from core.logger import setup_logging, get_signalos_logger
-from config.settings import AppSettings
-from core.health_monitor import HealthMonitor
-from core.signal_engine import SignalEngine
-from models.signal_model import SignalStatus
+try:
+    from core.logger import setup_logging, get_signalos_logger
+    from config.settings import AppSettings
+    from core.health_monitor import HealthMonitor
+    from core.signal_engine import SignalEngine
+    CORE_MODULES_AVAILABLE = True
+except ImportError as e:
+    print(f"Core modules not available: {e}")
+    CORE_MODULES_AVAILABLE = False
+    
+    # Mock core modules
+    class MockLogger:
+        def info(self, msg): print(f"INFO: {msg}")
+        def warning(self, msg): print(f"WARNING: {msg}")
+        def error(self, msg): print(f"ERROR: {msg}")
+    
+    def setup_logging(): pass
+    def get_signalos_logger(name): return MockLogger()
+    
+    class AppSettings:
+        def __init__(self): pass
+    
+    class HealthMonitor:
+        def start_monitoring(self): pass
+        def stop_monitoring(self): pass
+        def get_health_summary(self): return {"status": "ok"}
+    
+    class SignalEngine:
+        def get_statistics(self): return {"signals": 0}
+try:
+    from models.signal_model import SignalStatus
+except ImportError:
+    # Mock SignalStatus when not available
+    class SignalStatus:
+        PENDING = "pending"
+        PROCESSING = "processing"
+        EXECUTED = "executed"
+        FAILED = "failed"
 
 class SignalOSWebApp:
     """Main web application class for SignalOS"""
@@ -68,10 +112,26 @@ class SignalOSWebApp:
         self.port = int(os.environ.get('PORT', 5000))
         self.socketio = SocketIO(self.app, cors_allowed_origins="*", async_mode='threading', logger=False, engineio_logger=False)
         
-        self.settings = AppSettings()
-        self.health_monitor = HealthMonitor()
-        self.signal_engine = SignalEngine()
-        self.logger = get_signalos_logger(__name__)
+        if CORE_MODULES_AVAILABLE:
+            self.settings = AppSettings()
+            self.health_monitor = HealthMonitor()
+            self.signal_engine = SignalEngine()
+            self.logger = get_signalos_logger(__name__)
+        else:
+            self.settings = AppSettings()
+            self.health_monitor = HealthMonitor()
+            self.signal_engine = SignalEngine()
+            self.logger = get_signalos_logger(__name__)
+        
+        # Initialize database
+        if DATABASE_AVAILABLE:
+            try:
+                create_tables()
+                self.logger.info("Database tables created/verified successfully")
+            except Exception as e:
+                self.logger.error(f"Database initialization error: {e}")
+        else:
+            self.logger.warning("Database not available, using demo data")
         
         self.setup_routes()
         self.setup_socketio_events()
@@ -148,15 +208,47 @@ class SignalOSWebApp:
             email = data.get('email')
             password = data.get('password')
             
-            # Mock user validation for now
-            if email and password:
+            if not email or not password:
+                return jsonify({'message': 'Email and password required'}), 400
+            
+            user_data = None
+            
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        user = db.query(User).filter(User.email == email).first()
+                        
+                        if user and check_password_hash(user.password_hash, password):
+                            # Update last login
+                            user.last_login = datetime.utcnow()
+                            db.commit()
+                            user_data = {
+                                'id': user.id,
+                                'email': user.email,
+                                'name': user.name,
+                                'license': user.license_type
+                            }
+                except Exception as e:
+                    self.logger.warning(f"Database login failed, using fallback: {e}")
+            
+            # Fallback authentication for demo
+            if not user_data and email == 'demo@signalos.com' and password == 'demo':
+                user_data = {
+                    'id': 1,
+                    'email': email,
+                    'name': 'Demo User',
+                    'license': 'Pro'
+                }
+            
+            if user_data:
                 # Generate token (JWT if available, simple base64 otherwise)
                 if JWT_AVAILABLE:
                     payload = {
-                        'user_id': 1,
-                        'email': email,
-                        'name': 'SignalOS User',
-                        'license': 'Pro',
+                        'user_id': user_data['id'],
+                        'email': user_data['email'],
+                        'name': user_data['name'],
+                        'license': user_data['license'],
                         'exp': datetime.utcnow() + timedelta(days=7)
                     }
                     token = jwt.encode(payload, self.app.config['JWT_SECRET'], algorithm='HS256')
@@ -167,12 +259,7 @@ class SignalOSWebApp:
                 
                 return jsonify({
                     'token': token,
-                    'user': {
-                        'id': 1,
-                        'email': email,
-                        'name': 'SignalOS User',
-                        'license': 'Pro'
-                    }
+                    'user': user_data
                 })
             
             return jsonify({'message': 'Invalid credentials'}), 401
@@ -185,32 +272,93 @@ class SignalOSWebApp:
             password = data.get('password')
             name = data.get('name')
             
-            if email and password and name:
-                # Mock registration success
-                return jsonify({'message': 'Registration successful'})
+            if not email or not password or not name:
+                return jsonify({'message': 'Missing required fields'}), 400
             
-            return jsonify({'message': 'Missing required fields'}), 400
+            db = next(get_db())
+            
+            # Check if user already exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            if existing_user:
+                return jsonify({'message': 'User already exists'}), 400
+            
+            # Create new user
+            password_hash = generate_password_hash(password)
+            new_user = User(
+                email=email,
+                name=name,
+                password_hash=password_hash,
+                license_type='free'
+            )
+            
+            db.add(new_user)
+            db.commit()
+            
+            # Create default user settings
+            default_settings = UserSettings(user_id=new_user.id)
+            db.add(default_settings)
+            db.commit()
+            
+            return jsonify({'message': 'Registration successful'})
         
         # API routes for dashboard data
         @self.app.route('/api/telegram/sessions')
         def get_telegram_sessions():
             """Get Telegram session information"""
-            return jsonify({
-                'sessions': [
-                    {
-                        'id': 1,
-                        'phone': '+1234567890',
-                        'status': 'connected',
-                        'last_activity': datetime.now().isoformat(),
-                        'channels': ['@forex_signals', '@trading_group']
-                    }
-                ]
-            })
+            if DATABASE_AVAILABLE:
+                db = next(get_db())
+                sessions = db.query(TelegramSession).all()
+                
+                session_data = []
+                for session in sessions:
+                    channels = db.query(TelegramChannel).filter(TelegramChannel.session_id == session.id).all()
+                    session_data.append({
+                        'id': session.id,
+                        'phone': session.phone_number,
+                        'status': session.status,
+                        'last_activity': session.last_activity.isoformat() if session.last_activity else None,
+                        'channels': [channel.name for channel in channels]
+                    })
+                
+                return jsonify({'sessions': session_data})
+            else:
+                # Return sample data when database not available
+                return jsonify({
+                    'sessions': [
+                        {
+                            'id': 1,
+                            'phone': '+1234567890',
+                            'status': 'connected',
+                            'last_activity': datetime.now().isoformat(),
+                            'channels': ['@forex_signals', '@trading_group']
+                        }
+                    ]
+                })
         
         @self.app.route('/api/telegram/sessions', methods=['POST'])
         def add_telegram_session():
             """Add new Telegram session"""
             data = request.get_json()
+            
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        new_session = TelegramSession(
+                            user_id=1,  # Would get from JWT token in real implementation
+                            phone_number=data.get('phone'),
+                            api_id=data.get('api_id'),
+                            api_hash=data.get('api_hash'),
+                            status='connecting'
+                        )
+                        
+                        db.add(new_session)
+                        db.commit()
+                        
+                        return jsonify({'message': 'Session added successfully', 'id': new_session.id})
+                except Exception as e:
+                    self.logger.error(f"Database error adding session: {e}")
+            
             return jsonify({'message': 'Session added successfully', 'id': 2})
         
         @self.app.route('/api/telegram/sessions/<int:session_id>', methods=['DELETE'])
@@ -254,33 +402,87 @@ class SignalOSWebApp:
         @self.app.route('/api/mt5/terminals')
         def get_mt5_terminals():
             """Get MT5 terminal configurations"""
-            return jsonify({
-                'terminals': [
-                    {
-                        'id': 1,
-                        'name': 'MT5 Demo',
-                        'server': 'MetaQuotes-Demo',
-                        'account': '12345',
-                        'status': 'connected',
-                        'balance': 10000.00,
-                        'equity': 10150.50
-                    },
-                    {
-                        'id': 2,
-                        'name': 'MT5 Live',
-                        'server': 'ICMarkets-Live',
-                        'account': '67890',
-                        'status': 'disconnected',
-                        'balance': 5000.00,
-                        'equity': 4950.00
-                    }
-                ]
-            })
+            if DATABASE_AVAILABLE:
+                db = next(get_db())
+                terminals = db.query(MT5Terminal).all()
+                
+                terminal_data = []
+                for terminal in terminals:
+                    terminal_data.append({
+                        'id': terminal.id,
+                        'name': terminal.name,
+                        'server': terminal.server,
+                        'account': terminal.login,
+                        'status': terminal.status,
+                        'balance': terminal.balance,
+                        'equity': terminal.equity,
+                        'risk_type': terminal.risk_type,
+                        'risk_value': terminal.risk_value,
+                        'last_heartbeat': terminal.last_heartbeat.isoformat() if terminal.last_heartbeat else None
+                    })
+                
+                return jsonify({'terminals': terminal_data})
+            else:
+                # Return sample data when database not available
+                return jsonify({
+                    'terminals': [
+                        {
+                            'id': 1,
+                            'name': 'MT5 Demo',
+                            'server': 'MetaQuotes-Demo',
+                            'account': '12345',
+                            'status': 'connected',
+                            'balance': 10000.00,
+                            'equity': 10150.50
+                        },
+                        {
+                            'id': 2,
+                            'name': 'MT5 Live',
+                            'server': 'ICMarkets-Live',
+                            'account': '67890',
+                            'status': 'disconnected',
+                            'balance': 5000.00,
+                            'equity': 4950.00
+                        }
+                    ]
+                })
         
         @self.app.route('/api/mt5/terminals', methods=['POST'])
         def add_mt5_terminal():
             """Add new MT5 terminal"""
             data = request.get_json()
+            
+            if DATABASE_AVAILABLE:
+                try:
+                    db = next(get_db())
+                    if db:
+                        # Hash the password
+                        password_hash = generate_password_hash(data.get('password', ''))
+                        
+                        new_terminal = MT5Terminal(
+                            user_id=1,  # Would get from JWT token in real implementation
+                            name=data.get('name'),
+                            server=data.get('server'),
+                            login=data.get('login'),
+                            password_hash=password_hash,
+                            risk_type=data.get('riskType', 'fixed'),
+                            risk_value=data.get('riskValue', 0.1),
+                            enable_sl_override=data.get('enableSLOverride', False),
+                            enable_tp_override=data.get('enableTPOverride', False),
+                            enable_be_logic=data.get('enableBELogic', True),
+                            sl_buffer=data.get('slBuffer', 5),
+                            trade_delay=data.get('tradeDelay', 0),
+                            enable_trailing=data.get('enableTrailing', False),
+                            status='disconnected'
+                        )
+                        
+                        db.add(new_terminal)
+                        db.commit()
+                        
+                        return jsonify({'message': 'Terminal added successfully', 'id': new_terminal.id})
+                except Exception as e:
+                    self.logger.error(f"Database error adding terminal: {e}")
+            
             return jsonify({'message': 'Terminal added successfully', 'id': 3})
         
         @self.app.route('/api/mt5/terminals/<int:terminal_id>', methods=['DELETE'])

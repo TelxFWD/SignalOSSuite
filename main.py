@@ -1,17 +1,26 @@
 from app import app, socketio
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import jwt
+import json
 import random
 
 # Import models for database operations
 try:
-    from models import User, TelegramSession, TelegramChannel, MT5Terminal, Strategy, Signal, Trade, UserSettings, create_tables
+    from models import (User, TelegramSession, TelegramChannel, MT5Terminal, Strategy, Signal, Trade, UserSettings, 
+                       AdminUser, LicensePlan, UserLicense, ParserModel, SignalProvider, SystemLog, NotificationTemplate, create_tables)
     from app import db
     DB_AVAILABLE = True
 except ImportError:
     DB_AVAILABLE = False
+
+# Import admin panel
+try:
+    import admin_routes
+    ADMIN_AVAILABLE = True
+except ImportError:
+    ADMIN_AVAILABLE = False
 
 @app.route('/')
 def index():
@@ -374,6 +383,130 @@ def simulate_signal():
         'message': 'Signal simulated successfully',
         'signal': signal_data
     })
+
+# Admin API endpoints
+@app.route('/admin/api/signals/<int:signal_id>/reparse', methods=['POST'])
+def admin_reparse_signal(signal_id):
+    """Re-parse a signal for admin debugging"""
+    if 'admin_user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if DB_AVAILABLE:
+        try:
+            signal = Signal.query.get_or_404(signal_id)
+            # In real implementation, this would trigger re-parsing
+            signal.status = SignalStatus.PENDING
+            db.session.commit()
+            
+            # Log the action
+            log_entry = SystemLog(
+                level='INFO',
+                category='admin',
+                message=f'Signal {signal_id} re-parsing initiated by admin',
+                signal_id=signal_id,
+                additional_data=json.dumps({'admin_user': session['admin_user_id']})
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Signal re-parsing initiated'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    return jsonify({'success': True, 'message': 'Re-parsing simulated (no database)'})
+
+@app.route('/admin/api/signals/<int:signal_id>/reexecute', methods=['POST'])
+def admin_reexecute_signal(signal_id):
+    """Re-execute a signal for admin debugging"""
+    if 'admin_user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if DB_AVAILABLE:
+        try:
+            signal = Signal.query.get_or_404(signal_id)
+            # In real implementation, this would trigger re-execution
+            signal.status = SignalStatus.PROCESSING
+            db.session.commit()
+            
+            # Log the action
+            log_entry = SystemLog(
+                level='INFO',
+                category='admin',
+                message=f'Signal {signal_id} re-execution initiated by admin',
+                signal_id=signal_id,
+                additional_data=json.dumps({'admin_user': session['admin_user_id']})
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Signal re-execution initiated'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    return jsonify({'success': True, 'message': 'Re-execution simulated (no database)'})
+
+@app.route('/admin/api/signals/<int:signal_id>/resolve', methods=['POST'])
+def admin_resolve_signal(signal_id):
+    """Mark a signal as resolved for admin debugging"""
+    if 'admin_user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if DB_AVAILABLE:
+        try:
+            signal = Signal.query.get_or_404(signal_id)
+            signal.status = SignalStatus.EXECUTED
+            db.session.commit()
+            
+            # Log the action
+            log_entry = SystemLog(
+                level='INFO',
+                category='admin',
+                message=f'Signal {signal_id} marked as resolved by admin',
+                signal_id=signal_id,
+                additional_data=json.dumps({'admin_user': session['admin_user_id']})
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Signal marked as resolved'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    return jsonify({'success': True, 'message': 'Signal marked as resolved (simulated)'})
+
+@app.route('/admin/api/signals/<int:signal_id>/export-logs')
+def admin_export_signal_logs(signal_id):
+    """Export logs for a specific signal"""
+    if 'admin_user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if DB_AVAILABLE:
+        try:
+            signal = Signal.query.get_or_404(signal_id)
+            logs = SystemLog.query.filter_by(signal_id=signal_id).order_by(SystemLog.timestamp).all()
+            
+            log_data = []
+            for log in logs:
+                log_data.append({
+                    'timestamp': log.timestamp.isoformat(),
+                    'level': log.level,
+                    'category': log.category,
+                    'message': log.message,
+                    'additional_data': log.additional_data
+                })
+            
+            response_data = {
+                'signal_id': signal_id,
+                'signal_text': signal.raw_text,
+                'logs': log_data,
+                'exported_at': datetime.now().isoformat()
+            }
+            
+            return jsonify(response_data)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'error': 'Database not available'}), 503
 
 # SocketIO events for real-time updates
 @socketio.on('connect')

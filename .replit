@@ -2,7 +2,7 @@ modules = ["python-3.11", "nodejs-20", "web"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["hdf5", "libxcrypt", "openssl", "postgresql"]
+packages = ["freetype", "glibcLocales", "hdf5", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "postgresql", "tcl", "tk", "zlib"]
 
 [workflows]
 runButton = "Project"

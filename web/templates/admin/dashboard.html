@@ -1,0 +1,214 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">SignalOS Admin Dashboard</h1>
+        </div>
+    </div>
+    
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_users }}</h4>
+                            <p class="card-text">Total Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ active_users }}</h4>
+                            <p class="card-text">Active Users</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_signals }}</h4>
+                            <p class="card-text">Total Signals</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-signal fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_trades }}</h4>
+                            <p class="card-text">Total Trades</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Activity (Last 7 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <h3 class="text-primary">{{ recent_signals }}</h3>
+                            <p>New Signals</p>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-success">{{ recent_trades }}</h3>
+                            <p>New Trades</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>System Health</h5>
+                </div>
+                <div class="card-body">
+                    {% if latest_health %}
+                    <div class="row">
+                        <div class="col-4">
+                            <p><strong>CPU:</strong> {{ "%.1f"|format(latest_health.cpu_percent) }}%</p>
+                        </div>
+                        <div class="col-4">
+                            <p><strong>Memory:</strong> {{ "%.1f"|format(latest_health.memory_percent) }}%</p>
+                        </div>
+                        <div class="col-4">
+                            <p><strong>Status:</strong> 
+                                <span class="badge badge-{{ 'success' if latest_health.telegram_connected else 'danger' }}">
+                                    {{ 'Online' if latest_health.telegram_connected else 'Offline' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No health data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        {% if charts.signals_chart %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Signal Processing Trend</h5>
+                </div>
+                <div class="card-body">
+                    <div id="signals-chart"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if charts.license_chart %}
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>License Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="license-chart"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- License Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>License Plan Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Plan Name</th>
+                                    <th>Active Users</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for plan_name, count in license_stats %}
+                                <tr>
+                                    <td>{{ plan_name }}</td>
+                                    <td>{{ count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    // Render charts if data is available
+    {% if charts.signals_chart %}
+    var signalsData = {{ charts.signals_chart|safe }};
+    Plotly.newPlot('signals-chart', signalsData.data, signalsData.layout, {responsive: true});
+    {% endif %}
+    
+    {% if charts.license_chart %}
+    var licenseData = {{ charts.license_chart|safe }};
+    Plotly.newPlot('license-chart', licenseData.data, licenseData.layout, {responsive: true});
+    {% endif %}
+    
+    // Auto-refresh metrics every 30 seconds
+    setInterval(function() {
+        fetch('/admin/api/system-metrics')
+            .then(response => response.json())
+            .then(data => {
+                // Update system health indicators
+                console.log('System metrics updated:', data);
+            })
+            .catch(error => console.error('Error fetching metrics:', error));
+    }, 30000);
+</script>
+{% endblock %}

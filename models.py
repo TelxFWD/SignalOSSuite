@@ -252,6 +252,100 @@ class UserSettings(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class AdminUser(db.Model):
+    __tablename__ = "admin_users"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True)
+    role = db.Column(db.String(50), default="admin")  # admin, super_admin, moderator
+    permissions = db.Column(db.Text)  # JSON string of permissions
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="admin_profile")
+
+class LicensePlan(db.Model):
+    __tablename__ = "license_plans"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    price = db.Column(db.Float, default=0.0)
+    duration_days = db.Column(db.Integer, default=30)
+    max_terminals = db.Column(db.Integer, default=1)
+    max_channels = db.Column(db.Integer, default=5)
+    max_strategies = db.Column(db.Integer, default=3)
+    features = db.Column(db.Text)  # JSON string of features
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserLicense(db.Model):
+    __tablename__ = "user_licenses"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey("license_plans.id"), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    auto_renew = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), default="active")  # active, expired, suspended
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="licenses")
+    plan = db.relationship("LicensePlan", backref="user_licenses")
+
+class ParserModel(db.Model):
+    __tablename__ = "parser_models"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    version = db.Column(db.String(50), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    model_file_path = db.Column(db.String(500))
+    accuracy = db.Column(db.Float, default=0.0)
+    training_samples = db.Column(db.Integer, default=0)
+    active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class SignalProvider(db.Model):
+    __tablename__ = "signal_providers"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    logo_url = db.Column(db.String(500))
+    telegram_channel = db.Column(db.String(255))
+    website_url = db.Column(db.String(500))
+    contact_info = db.Column(db.Text)
+    verified = db.Column(db.Boolean, default=False)
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SystemLog(db.Model):
+    __tablename__ = "system_logs"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    level = db.Column(db.String(20), nullable=False)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    category = db.Column(db.String(50), nullable=False)  # parser, mt5, telegram, system
+    message = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    signal_id = db.Column(db.Integer, db.ForeignKey("signals.id"))
+    additional_data = db.Column(db.Text)  # JSON string
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    user = db.relationship("User", backref="logs")
+    signal = db.relationship("Signal", backref="logs")
+
+class NotificationTemplate(db.Model):
+    __tablename__ = "notification_templates"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    type = db.Column(db.String(50), nullable=False)  # telegram, email, webhook
+    subject = db.Column(db.String(255))
+    message_template = db.Column(db.Text, nullable=False)
+    variables = db.Column(db.Text)  # JSON string of available variables
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # Utility functions
 def create_tables():
     """Create all database tables"""

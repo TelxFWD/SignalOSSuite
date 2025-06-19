@@ -1,0 +1,11 @@
+{
+  "name": "Aggressive Trading",
+  "description": "High-frequency trading with lower thresholds",
+  "execution": {
+    "max_risk_percent": 3.0,
+    "stealth_mode": false
+  },
+  "parser": {
+    "confidence_threshold": 0.7
+  }
+}

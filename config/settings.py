@@ -135,15 +135,23 @@ class AppSettings:
             print(f"Error saving config: {e}")
             return False
     
-    def export_config(self, filepath: str) -> bool:
-        """Export configuration to specified file"""
+    def export_config_data(self) -> dict:
+        """Export configuration data as dictionary"""
         try:
-            config_data = {
+            return {
                 'telegram': asdict(self.telegram),
                 'parser': asdict(self.parser),
                 'mt5': asdict(self.mt5),
                 'execution': asdict(self.execution)
             }
+        except Exception as e:
+            print(f"Error exporting config data: {e}")
+            return {}
+
+    def export_config(self, filepath: str) -> bool:
+        """Export configuration to specified file"""
+        try:
+            config_data = self.export_config_data()
             
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False)

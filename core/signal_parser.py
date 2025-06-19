@@ -261,10 +261,16 @@ class SignalParser:
         # Price patterns
         price_pattern = r'(\d+\.?\d*)'
         
-        # Entry price patterns
+        # Entry price patterns - enhanced for Gold/XAU formats
         entry_patterns = [
             r'(?:ENTRY|ENTER|PRICE|@)\s*:?\s*' + price_pattern,
-            r'(?:BUY|SELL)\s+(?:AT|@)\s*' + price_pattern
+            r'(?:BUY|SELL)\s+(?:AT|@)\s*' + price_pattern,
+            r'(?:LONG|SHORT)\s+(?:ENTRY|POSITION)\s*:?\s*' + price_pattern,
+            r'(?:GOLD|XAU)\s+(?:LONG|SHORT)\s+(?:ENTRY|POSITION)\s*:?\s*' + price_pattern,
+            r'(?:GOLD|XAU|XAUUSD)\s+(?:BUY|SELL)\s+(?:AT|@)?\s*' + price_pattern,
+            r'(?:GOLD|XAU)\s+(?:LONG|SHORT)?\s*(?:ENTRY)?\s*:?\s*' + price_pattern,
+            r'(?:LONG|SHORT)\s+(?:ENTRY)\s*:?\s*' + price_pattern,
+            r'(?:ENTRY)\s*:?\s*' + price_pattern
         ]
         
         for pattern in entry_patterns:
@@ -433,14 +439,15 @@ class SignalParser:
             'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD',
             'EURJPY', 'GBPJPY', 'EURGBP', 'AUDJPY', 'EURAUD', 'EURCHF', 'AUDNZD',
             'NZDJPY', 'GBPAUD', 'GBPCAD', 'EURNZD', 'AUDCAD', 'GBPCHF', 'AUDCHF',
-            'EURCAD', 'CADJPY', 'GBPNZD', 'CADCHF', 'CHFJPY', 'NZDCAD', 'NZDCHF'
+            'EURCAD', 'CADJPY', 'GBPNZD', 'CADCHF', 'CHFJPY', 'NZDCAD', 'NZDCHF',
+            'XAUUSD', 'XAGUSD', 'GOLD', 'SILVER', 'USOIL', 'BRENT'
         ]
     
     def _load_action_keywords(self) -> Dict[str, List[str]]:
         """Load action keywords"""
         return {
-            'buy': ['BUY', 'LONG', 'CALL', 'BULLISH', 'UP', 'ASCENDING'],
-            'sell': ['SELL', 'SHORT', 'PUT', 'BEARISH', 'DOWN', 'DESCENDING']
+            'buy': ['BUY', 'LONG', 'CALL', 'BULLISH', 'UP', 'ASCENDING', 'ENTRY'],
+            'sell': ['SELL', 'SHORT', 'PUT', 'BEARISH', 'DOWN', 'DESCENDING', 'POSITION']
         }
     
     def _load_fallback_patterns(self) -> List[Dict[str, str]]:

@@ -189,19 +189,34 @@ class SignalEngine:
     
     def apply_stealth_mode(self, execution_signal: ExecutionSignal) -> ExecutionSignal:
         """Apply stealth mode modifications"""
+        if not settings.execution.stealth_mode:
+            return execution_signal
+            
+        # Create a copy to avoid modifying the original
+        from copy import deepcopy
+        stealth_signal = deepcopy(execution_signal)
+        
         # Remove SL and TP if configured
         if settings.execution.remove_sl_tp:
-            execution_signal.stop_loss = None
-            execution_signal.take_profit = None
+            stealth_signal.stop_loss = None
+            stealth_signal.take_profit = None
         
         # Remove comment if configured
         if settings.execution.remove_comments:
-            execution_signal.comment = ""
+            stealth_signal.comment = ""
+        else:
+            stealth_signal.comment += " [STEALTH]"
         
         # Modify magic number for stealth
-        execution_signal.magic_number = 0
+        stealth_signal.magic_number = 0
         
-        return execution_signal
+        # Mark as stealth in metadata
+        stealth_signal.metadata['stealth_mode'] = True
+        stealth_signal.metadata['original_sl'] = execution_signal.stop_loss
+        stealth_signal.metadata['original_tp'] = execution_signal.take_profit
+        
+        logger.info(f"Applied stealth mode to signal {execution_signal.signal_id}")
+        return stealth_signal
     
     def write_signal_file(self, execution_signal: ExecutionSignal) -> bool:
         """Write execution signal to signal.json file for MT5 EA"""

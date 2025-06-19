@@ -1,0 +1,11 @@
+{
+  "name": "Beginner Setup",
+  "description": "Conservative settings for new users",
+  "execution": {
+    "max_risk_percent": 1.0,
+    "stealth_mode": true
+  },
+  "parser": {
+    "confidence_threshold": 0.9
+  }
+}

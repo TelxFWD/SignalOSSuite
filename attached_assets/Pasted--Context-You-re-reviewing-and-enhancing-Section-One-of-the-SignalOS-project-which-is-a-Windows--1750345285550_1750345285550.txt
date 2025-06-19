@@ -1,0 +1,46 @@
+🧠 Context:
+You're reviewing and enhancing Section One of the SignalOS project, which is a Windows desktop application built in Python (PyQt5 or PySide2) using Telethon for Telegram integration. This app includes an AI parser (spaCy or transformer-based), connects to MT5 via signal.json, and includes modules for strategy execution, SL buffer, shadow mode, error monitoring, and MT5 Instant Sync.
+
+🎯 Objective:
+1. Detect and fix any bugs, broken logic, crashes, or logging gaps.
+2. Compare against the required features in the original guide and complete any missing functionality.
+3. Ensure core modules (listed below) work seamlessly together and follow proper modular architecture.
+
+🔍 Scope of Modules to Review:
+- ✅ Login & Config Sync with backend
+- ✅ Telegram Session Manager using Telethon
+- ✅ AI Signal Parser (text + OCR image support)
+- ✅ SL Buffer (1–10 pip smart offset logic)
+- ✅ Signal Execution Engine (all order types incl. partial, SL-to-BE, edits)
+- ✅ Instant MT5 Sync System (auto path + EA injection + ping monitor)
+- ✅ Health & Recovery Monitor UI
+- ✅ Config Import/Export (.json)
+- ✅ Shadow/Offline Mode (non-execution testing)
+
+💡 Action Plan:
+1. 🔧 Run the application and simulate full signal parsing and MT5 sync.
+2. 📋 Log all trade signal lifecycles from reception ➝ parse ➝ signal.json ➝ EA heartbeat.
+3. 🐞 Detect:
+   - Sync issues (signal.json not updated / EA not reading)
+   - Parser failures or confidence under threshold
+   - Telegram session disconnect/reconnect logic
+   - Trade execution types not handled (e.g., edit/cancel/partial)
+4. 🔍 Identify missing or stubbed features based on the roadmap:
+   - Health monitor UI not reflecting EA sync? Add.
+   - SL buffer not applying to all relevant signals? Fix logic.
+   - No retry queue for failed signals? Add retry handler.
+5. ✅ Once bugs are fixed and features filled, refactor code for clarity, reuse, and logging consistency.
+
+🔐 Guidelines:
+- Use log files for parser/EA execution debug in `/logs/*.log`
+- Use modular functions (parser.py, mt5_bridge.py, sync.py, watchdog.py)
+- Handle exceptions gracefully; retry if recoverable
+- All modules should have unit tests or test stubs
+- Return final status as `✔ Stable | ⚠ Partial | ❌ Broken` per module
+
+📦 Output:
+- Debug summary
+- List of all fixed bugs
+- Completed missing features
+- Screenshot or console output confirming MT5 sync & parsing
+- Optional: Code improvements/optimizations suggestions

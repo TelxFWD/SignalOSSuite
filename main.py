@@ -7,7 +7,7 @@ import random
 
 # Import models for database operations
 try:
-    from models import User, TelegramSession, TelegramChannel, MT5Terminal, Strategy, Signal, Trade, get_db, create_tables
+    from models import User, TelegramSession, TelegramChannel, MT5Terminal, Strategy, Signal, Trade, UserSettings, create_tables
     from app import db
     DB_AVAILABLE = True
 except ImportError:
@@ -16,7 +16,10 @@ except ImportError:
 @app.route('/')
 def index():
     """Main dashboard page"""
-    return render_template('dashboard.html')
+    try:
+        return render_template('dashboard.html')
+    except Exception as e:
+        return f"<h1>SignalOS Dashboard</h1><p>Application is running. Template error: {str(e)}</p><p><a href='/api/test'>Test API</a></p>", 200
 
 @app.route('/api/health')
 def get_health():
@@ -165,7 +168,7 @@ def add_telegram_session():
     if DB_AVAILABLE:
         try:
             from models import TelegramSession
-            db = get_db()
+            from app import db
             new_session = TelegramSession(
                 user_id=1,  # Would get from JWT token in real implementation
                 phone_number=data.get('phone'),
@@ -173,8 +176,8 @@ def add_telegram_session():
                 api_hash=data.get('api_hash'),
                 status='connecting'
             )
-            db.add(new_session)
-            db.commit()
+            db.session.add(new_session)
+            db.session.commit()
             return jsonify({'message': 'Session added successfully', 'id': new_session.id})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -186,12 +189,10 @@ def delete_telegram_session(session_id):
     """Delete Telegram session"""
     if DB_AVAILABLE:
         try:
-            from models import TelegramSession
-            db = get_db()
-            session = db.query(TelegramSession).filter(TelegramSession.id == session_id).first()
+            session = TelegramSession.query.filter(TelegramSession.id == session_id).first()
             if session:
-                db.delete(session)
-                db.commit()
+                db.session.delete(session)
+                db.session.commit()
                 return jsonify({'message': 'Session deleted successfully'})
             return jsonify({'error': 'Session not found'}), 404
         except Exception as e:
@@ -205,16 +206,14 @@ def add_telegram_channel():
     data = request.get_json()
     if DB_AVAILABLE:
         try:
-            from models import TelegramChannel
-            db = get_db()
             new_channel = TelegramChannel(
                 session_id=data.get('session_id', 1),
                 name=data.get('name'),
                 url=data.get('url'),
                 enabled=True
             )
-            db.add(new_channel)
-            db.commit()
+            db.session.add(new_channel)
+            db.session.commit()
             return jsonify({'message': 'Channel added successfully', 'id': new_channel.id})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -226,12 +225,10 @@ def delete_telegram_channel(channel_id):
     """Delete Telegram channel"""
     if DB_AVAILABLE:
         try:
-            from models import TelegramChannel
-            db = get_db()
-            channel = db.query(TelegramChannel).filter(TelegramChannel.id == channel_id).first()
+            channel = TelegramChannel.query.filter(TelegramChannel.id == channel_id).first()
             if channel:
-                db.delete(channel)
-                db.commit()
+                db.session.delete(channel)
+                db.session.commit()
                 return jsonify({'message': 'Channel deleted successfully'})
             return jsonify({'error': 'Channel not found'}), 404
         except Exception as e:

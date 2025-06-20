@@ -1,4 +1,4 @@
-from app import app, socketio
+from app import app, socketio, db
 from flask import render_template, jsonify, request, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -211,7 +211,6 @@ def add_telegram_session():
     if DB_AVAILABLE:
         try:
             from models import TelegramSession
-            from app import db
             new_session = TelegramSession(
                 user_id=1,  # Would get from JWT token in real implementation
                 phone_number=data.get('phone'),
@@ -293,7 +292,6 @@ def add_mt5_terminal():
         try:
             from models import MT5Terminal
             from werkzeug.security import generate_password_hash
-            db = get_db()
             new_terminal = MT5Terminal(
                 user_id=1,  # Would get from JWT token in real implementation
                 name=data.get('name'),
@@ -302,8 +300,8 @@ def add_mt5_terminal():
                 password_hash=generate_password_hash(data.get('password')),
                 status='connecting'
             )
-            db.add(new_terminal)
-            db.commit()
+            db.session.add(new_terminal)
+            db.session.commit()
             return jsonify({'message': 'Terminal added successfully', 'id': new_terminal.id})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -316,11 +314,10 @@ def delete_mt5_terminal(terminal_id):
     if DB_AVAILABLE:
         try:
             from models import MT5Terminal
-            db = get_db()
-            terminal = db.query(MT5Terminal).filter(MT5Terminal.id == terminal_id).first()
+            terminal = MT5Terminal.query.filter(MT5Terminal.id == terminal_id).first()
             if terminal:
-                db.delete(terminal)
-                db.commit()
+                db.session.delete(terminal)
+                db.session.commit()
                 return jsonify({'message': 'Terminal deleted successfully'})
             return jsonify({'error': 'Terminal not found'}), 404
         except Exception as e:
@@ -335,7 +332,6 @@ def create_strategy():
     if DB_AVAILABLE:
         try:
             from models import Strategy
-            db = get_db()
             new_strategy = Strategy(
                 user_id=1,  # Would get from JWT token in real implementation
                 name=data.get('name'),
@@ -344,8 +340,8 @@ def create_strategy():
                 max_risk=float(data.get('max_risk', 1.0)),
                 active=True
             )
-            db.add(new_strategy)
-            db.commit()
+            db.session.add(new_strategy)
+            db.session.commit()
             return jsonify({'message': 'Strategy created successfully', 'id': new_strategy.id})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -358,11 +354,10 @@ def delete_strategy(strategy_id):
     if DB_AVAILABLE:
         try:
             from models import Strategy
-            db = get_db()
-            strategy = db.query(Strategy).filter(Strategy.id == strategy_id).first()
+            strategy = Strategy.query.filter(Strategy.id == strategy_id).first()
             if strategy:
-                db.delete(strategy)
-                db.commit()
+                db.session.delete(strategy)
+                db.session.commit()
                 return jsonify({'message': 'Strategy deleted successfully'})
             return jsonify({'error': 'Strategy not found'}), 404
         except Exception as e:
@@ -379,15 +374,14 @@ def toggle_shadow_mode():
     if DB_AVAILABLE:
         try:
             from models import UserSettings
-            db = get_db()
-            settings = db.query(UserSettings).filter(UserSettings.user_id == 1).first()
+            settings = UserSettings.query.filter(UserSettings.user_id == 1).first()
             if settings:
                 settings.enable_shadow_mode = enabled
-                db.commit()
+                db.session.commit()
             else:
                 new_settings = UserSettings(user_id=1, enable_shadow_mode=enabled)
-                db.add(new_settings)
-                db.commit()
+                db.session.add(new_settings)
+                db.session.commit()
             return jsonify({'message': 'Shadow mode updated', 'enabled': enabled})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -447,6 +441,7 @@ if __name__ == '__main__':
     if DB_AVAILABLE:
         with app.app_context():
             try:
+                from models import create_tables
                 create_tables()
                 print("Database tables created successfully")
             except Exception as e:

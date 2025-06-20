@@ -23,6 +23,7 @@ dependencies = [
     "flask-admin>=1.6.1",
     "wtforms>=3.2.1",
     "flask-wtf>=1.2.2",
+    "eventlet>=0.40.0",
 ]
 
 [[tool.uv.index]]

@@ -31,23 +31,49 @@ class MT5Sync:
         self.detect_mt5_paths()
     
     def detect_mt5_paths(self):
-        """Detect MT5 installation paths"""
+        """Detect MT5 installation paths with enhanced auto-detection"""
         try:
+            logger.info("Starting MT5 path detection...")
+            
+            # Common MT5 installation paths
+            potential_paths = [
+                Path("C:/Program Files/MetaTrader 5/terminal64.exe"),
+                Path("C:/Program Files (x86)/MetaTrader 5/terminal64.exe"),
+                Path("C:/Program Files/MetaTrader 5/terminal.exe"),
+                Path("C:/Program Files (x86)/MetaTrader 5/terminal.exe"),
+            ]
+            
+            # Check if user provided path exists
             if self.terminal_path and self.terminal_path.exists():
-                # Get the installation directory
+                logger.info(f"Using configured terminal path: {self.terminal_path}")
                 install_dir = self.terminal_path.parent
+            else:
+                # Auto-detect MT5 installation
+                install_dir = None
+                for path in potential_paths:
+                    if path.exists():
+                        logger.info(f"Found MT5 installation at: {path}")
+                        self.terminal_path = path
+                        install_dir = path.parent
+                        break
                 
-                # Find MQL5 folder
-                mql5_folder = install_dir / "MQL5"
-                if mql5_folder.exists():
-                    self.experts_folder = mql5_folder / "Experts"
-                    self.common_folder = mql5_folder / "Files"
-                else:
-                    # Try AppData folder
-                    appdata_folder = Path.home() / "AppData" / "Roaming" / "MetaQuotes" / "Terminal"
-                    if appdata_folder.exists():
-                        # Find terminal data folder (usually a hash)
-                        for folder in appdata_folder.iterdir():
+                if not install_dir:
+                    logger.warning("No MT5 installation found in standard locations")
+                    return False
+            
+            # Find MQL5 folder structure
+            mql5_folder = install_dir / "MQL5"
+            if mql5_folder.exists():
+                self.experts_folder = mql5_folder / "Experts"
+                self.common_folder = mql5_folder / "Files"
+                logger.info(f"Found MQL5 structure: {mql5_folder}")
+            else:
+                # Try AppData folder for terminal data
+                appdata_folder = Path.home() / "AppData" / "Roaming" / "MetaQuotes" / "Terminal"
+                if appdata_folder.exists():
+                    logger.info(f"Checking AppData terminals: {appdata_folder}")
+                    # Find terminal data folder (usually a hash)
+                    for folder in appdata_folder.iterdir():
                             if folder.is_dir():
                                 mql5_path = folder / "MQL5"
                                 if mql5_path.exists():

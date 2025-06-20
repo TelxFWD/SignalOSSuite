@@ -1,0 +1,78 @@
+🧠 Context:
+You’re now in the final phase of preparing SignalOS for production. The core system (parser, backend, dashboard, admin panel) is stable, but several critical bugs and integration gaps remain — especially around MT5, Telegram, WebSocket handling, and edge-case parsing (e.g., GOLD/XAU).
+
+🎯 Objective:
+1. Fix all remaining bugs and system-level issues from QA
+2. Complete MT5, Telegram, WebSocket, and Shadow Mode functionality
+3. Improve the parsing logic for XAU/Gold signals
+4. Finalize production readiness
+
+---
+
+📋 ✅ High Priority Fixes (Bugs):
+
+1. 🐞 **MT5 File Communication Failure**
+   - Ensure `signal.json` is written in correct location
+   - Confirm EA is installed and reading the correct path
+   - Fix any permissions or race conditions
+
+2. 🐞 **Shadow Mode Stealth Failure**
+   - Debug why SL/TP/Entry masking isn’t being applied
+   - Ensure logic is conditional on shadow mode toggle
+   - Add test logs for before/after signal modification
+
+3. 🐞 **Gold/XAU Parsing Bug**
+   - Expand parser rules to detect variants: `Gold`, `XAUUSD`, `XAU`, `GOLD/USD`
+   - Add fallback keyword mapping to normalize asset names
+
+4. 🐞 **WebSocket Worker Timeout**
+   - Review `gunicorn` config: increase timeout, add `--worker-class=gevent`
+   - Ensure Socket.IO or WebSocket backend keeps connections alive for dashboard updates
+
+5. 🐞 **Health Monitor Status Gaps**
+   - Add missing status fields: parser version, EA ping, MT5 uptime
+   - Show “Last signal received” timestamp per user
+   - Improve frontend indicators for failed sync
+
+---
+
+🧩 🔧 Missing Features to Implement:
+
+1. 🔌 **MT5 Auto-Detection**
+   - Implement local scanning for `C:/Program Files/MetaTrader 5`
+   - Auto-inject EA file and validate MT5 account login
+
+2. 📥 **SignalOS EA Installer**
+   - Add EA deployment script (copy `.ex5` + load template config)
+   - Confirm terminal auto-loads EA on chart via CLI or file signal
+
+3. 🔐 **Live Telegram Integration**
+   - Add production bot API credentials
+   - Validate session login, channel join, real-time signal reception
+
+---
+
+🔁 Cross-System Verification Plan:
+
+- [ ] Telegram → Parser → Dashboard → MT5 (Live Signal Flow)
+- [ ] Admin pushes new model → App updates parser version
+- [ ] WebSocket dashboard refreshes signals in real time
+- [ ] Shadow Mode test case logs masked signal output
+- [ ] EA heartbeat and MT5 sync tracked in Health Monitor
+
+---
+
+📦 Final Deliverables:
+- ✅ Updated parser with XAU fallback logic
+- ✅ MT5 terminal integration confirmed (signal.json → EA trade)
+- ✅ Telegram channel connected with live signal demo
+- ✅ Stable WebSocket connections (no dashboard refresh lag)
+- ✅ Shadow Mode logs with masked signals for dry-run
+- ✅ System Health panel with full status set
+
+🛠 Bonus (Optional):
+- Add test toggle: simulate signal for XAU/Gold and watch entire flow
+- Use `logs/production_check.log` to write status of each test
+
+🎯 Goal:
+Achieve full production readiness of SignalOS across all 3 modules — with MT5 integration, Telegram signals, parser upgrades, and user feedback pipeline fully functional.

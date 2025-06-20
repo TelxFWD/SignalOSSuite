@@ -215,34 +215,65 @@ class SignalEngine:
         return f"SignalOS_{signal.pair}_{datetime.now().strftime('%H%M%S')}"
     
     def apply_stealth_mode(self, execution_signal: ExecutionSignal) -> ExecutionSignal:
-        """Apply stealth mode modifications"""
-        if not settings.execution.stealth_mode:
+        """Apply stealth mode modifications with enhanced logging"""
+        logger.info(f"Checking stealth mode for signal {getattr(execution_signal, 'signal_id', 'unknown')}")
+        
+        # Check if shadow mode is enabled (using correct attribute)
+        shadow_mode_enabled = getattr(settings, 'shadow_mode', False)
+        stealth_mode_enabled = getattr(settings.execution, 'stealth_mode', False) if hasattr(settings, 'execution') else False
+        
+        logger.info(f"Shadow mode: {shadow_mode_enabled}, Stealth mode: {stealth_mode_enabled}")
+        
+        if not (shadow_mode_enabled or stealth_mode_enabled):
+            logger.info("Neither shadow nor stealth mode enabled, returning original signal")
             return execution_signal
             
         # Create a copy to avoid modifying the original
         from copy import deepcopy
         stealth_signal = deepcopy(execution_signal)
         
-        # Remove SL and TP if configured
-        if settings.execution.remove_sl_tp:
-            stealth_signal.stop_loss = None
-            stealth_signal.take_profit = None
+        # Apply shadow mode modifications
+        if shadow_mode_enabled:
+            logger.info("Applying shadow mode modifications")
+            # In shadow mode, we simulate but don't actually execute
+            if hasattr(stealth_signal, 'metadata'):
+                stealth_signal.metadata['shadow_mode'] = True
+                stealth_signal.metadata['original_execution'] = False
+            
+        # Apply stealth modifications
+        if stealth_mode_enabled:
+            logger.info("Applying stealth mode modifications")
+            
+            # Remove SL and TP if configured
+            remove_sl_tp = getattr(settings.execution, 'remove_sl_tp', True)
+            if remove_sl_tp:
+                logger.info("Removing SL/TP for stealth mode")
+                if hasattr(stealth_signal, 'stop_loss'):
+                    stealth_signal.stop_loss = None
+                if hasattr(stealth_signal, 'take_profit'):
+                    stealth_signal.take_profit = None
+            
+            # Remove comment if configured
+            remove_comments = getattr(settings.execution, 'remove_comments', True)
+            if remove_comments:
+                logger.info("Removing comments for stealth mode")
+                if hasattr(stealth_signal, 'comment'):
+                    stealth_signal.comment = ""
+            else:
+                if hasattr(stealth_signal, 'comment'):
+                    stealth_signal.comment = getattr(stealth_signal, 'comment', '') + " [STEALTH]"
+            
+            # Modify magic number for stealth
+            if hasattr(stealth_signal, 'magic_number'):
+                stealth_signal.magic_number = 0
+            
+            # Mark as stealth in metadata
+            if hasattr(stealth_signal, 'metadata'):
+                stealth_signal.metadata['stealth_mode'] = True
+                stealth_signal.metadata['original_sl'] = getattr(execution_signal, 'stop_loss', None)
+                stealth_signal.metadata['original_tp'] = getattr(execution_signal, 'take_profit', None)
         
-        # Remove comment if configured
-        if settings.execution.remove_comments:
-            stealth_signal.comment = ""
-        else:
-            stealth_signal.comment += " [STEALTH]"
-        
-        # Modify magic number for stealth
-        stealth_signal.magic_number = 0
-        
-        # Mark as stealth in metadata
-        stealth_signal.metadata['stealth_mode'] = True
-        stealth_signal.metadata['original_sl'] = execution_signal.stop_loss
-        stealth_signal.metadata['original_tp'] = execution_signal.take_profit
-        
-        logger.info(f"Applied stealth mode to signal {execution_signal.signal_id}")
+        logger.info(f"Applied stealth/shadow mode to signal {getattr(execution_signal, 'signal_id', 'unknown')}")
         return stealth_signal
     
     def write_signal_file(self, execution_signal: ExecutionSignal) -> bool:

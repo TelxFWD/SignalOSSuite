@@ -219,8 +219,21 @@ class SignalParser:
         return cleaned
     
     def extract_currency_pair(self, text: str) -> Optional[str]:
-        """Extract currency pair from text"""
-        # Look for standard currency pair patterns
+        """Extract currency pair from text with enhanced Gold/XAU support"""
+        # Enhanced patterns for Gold/XAU detection
+        gold_patterns = [
+            r'\b(?:GOLD|XAU|XAUUSD|XAU/USD|GOLD/USD)\b',
+            r'\bGOLD\s+(?:LONG|SHORT|BUY|SELL)\b',
+            r'\bXAU\s+(?:LONG|SHORT|BUY|SELL)\b'
+        ]
+        
+        # Check for Gold/XAU patterns first
+        text_upper = text.upper()
+        for pattern in gold_patterns:
+            if re.search(pattern, text_upper):
+                return 'XAUUSD'
+        
+        # Standard currency pair patterns
         patterns = [
             r'\b([A-Z]{3}[\/\-\s]?[A-Z]{3})\b',  # EURUSD, EUR/USD, EUR-USD
             r'\b([A-Z]{6})\b'  # EURUSD
@@ -233,6 +246,19 @@ class SignalParser:
                 pair = re.sub(r'[\/\-\s]', '', match)
                 if len(pair) == 6 and pair in self.currency_pairs:
                     return pair
+        
+        # Fallback mapping for common asset names
+        asset_mapping = {
+            'GOLD': 'XAUUSD',
+            'SILVER': 'XAGUSD',
+            'OIL': 'USOIL',
+            'BTC': 'BTCUSD',
+            'ETH': 'ETHUSD'
+        }
+        
+        for asset, pair in asset_mapping.items():
+            if asset in text_upper:
+                return pair
         
         return None
     

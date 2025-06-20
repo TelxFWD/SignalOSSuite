@@ -1,3 +1,4 @@
+
 // Simple SignalOS Dashboard - Direct DOM Updates
 // Add global unhandled promise rejection handler
 window.addEventListener('unhandledrejection', function(event) {
@@ -8,8 +9,8 @@ window.addEventListener('unhandledrejection', function(event) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Simple dashboard initializing...');
     
-    // Show the dashboard immediately
-    showDashboard();
+    // Replace loading screen with dashboard immediately
+    createDashboard();
     
     // Load data immediately
     loadDashboardData();
@@ -21,6 +22,148 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(loadDashboardData, 2000);
     setInterval(loadDashboardData, 30000);
 });
+
+function createDashboard() {
+    // Replace the entire app content with dashboard
+    const app = document.getElementById('app');
+    if (app) {
+        app.innerHTML = `
+            <div class="dashboard-container">
+                <!-- Navigation -->
+                <nav class="sidebar">
+                    <div class="nav-header">
+                        <h1>SignalOS</h1>
+                    </div>
+                    <ul class="nav-menu">
+                        <li class="nav-item active" data-tab="overview">
+                            <span>📊 Overview</span>
+                        </li>
+                        <li class="nav-item" data-tab="signals">
+                            <span>📡 Signals</span>
+                        </li>
+                        <li class="nav-item" data-tab="telegram">
+                            <span>📱 Telegram</span>
+                        </li>
+                        <li class="nav-item" data-tab="mt5">
+                            <span>💹 MT5</span>
+                        </li>
+                        <li class="nav-item" data-tab="strategies">
+                            <span>🎯 Strategies</span>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Main Content -->
+                <main class="main-content">
+                    <!-- Overview Tab -->
+                    <div id="tab-overview" class="tab-content active">
+                        <div class="dashboard-header">
+                            <h2>Dashboard Overview</h2>
+                            <div id="system-status" class="status-badge status-online">
+                                <div class="pulse-dot green"></div>
+                                <span>All Systems Online</span>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <h3>Trades Today</h3>
+                                    <span class="stat-icon">📈</span>
+                                </div>
+                                <div class="stat-value" id="trades-today">0</div>
+                                <div class="stat-change" id="trades-change">+0% from yesterday</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <h3>Total Pips</h3>
+                                    <span class="stat-icon">💎</span>
+                                </div>
+                                <div class="stat-value" id="total-pips">0</div>
+                                <div class="stat-change" id="pips-change">+0 this week</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <h3>Win Rate</h3>
+                                    <span class="stat-icon">🎯</span>
+                                </div>
+                                <div class="stat-value" id="win-rate">0%</div>
+                                <div class="stat-change" id="win-rate-change">Last 30 days</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <h3>Active Signals</h3>
+                                    <span class="stat-icon">📡</span>
+                                </div>
+                                <div class="stat-value" id="active-signals">0</div>
+                                <div class="stat-change" id="signals-change">Processing</div>
+                            </div>
+                        </div>
+
+                        <!-- Services Status -->
+                        <div class="services-grid">
+                            <div class="service-card">
+                                <h4>Database</h4>
+                                <div id="db-status" class="status-badge status-offline">Disconnected</div>
+                            </div>
+                            <div class="service-card">
+                                <h4>Telegram</h4>
+                                <div id="telegram-status" class="status-badge status-offline">Disconnected</div>
+                            </div>
+                            <div class="service-card">
+                                <h4>MT5</h4>
+                                <div id="mt5-status" class="status-badge status-offline">Disconnected</div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="actions-grid">
+                            <button class="action-btn" onclick="simulateSignal()">
+                                🔄 Simulate Signal
+                            </button>
+                            <button class="action-btn" onclick="setupTelegram()">
+                                📱 Setup Telegram
+                            </button>
+                            <button class="action-btn" onclick="addMT5Terminal()">
+                                💹 Add MT5 Terminal
+                            </button>
+                            <button class="action-btn" onclick="createStrategy()">
+                                🎯 Create Strategy
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Other Tabs (Placeholder) -->
+                    <div id="tab-signals" class="tab-content" style="display: none;">
+                        <h2>Signal Management</h2>
+                        <p>Signal configuration and monitoring tools.</p>
+                    </div>
+
+                    <div id="tab-telegram" class="tab-content" style="display: none;">
+                        <h2>Telegram Setup</h2>
+                        <p>Configure Telegram bot and channels.</p>
+                    </div>
+
+                    <div id="tab-mt5" class="tab-content" style="display: none;">
+                        <h2>MT5 Configuration</h2>
+                        <p>Connect and configure MT5 terminals.</p>
+                    </div>
+
+                    <div id="tab-strategies" class="tab-content" style="display: none;">
+                        <h2>Strategy Builder</h2>
+                        <p>Create and manage trading strategies.</p>
+                    </div>
+                </main>
+            </div>
+        `;
+    }
+
+    console.log('Dashboard UI created successfully');
+}
 
 function showDashboard() {
     // Show overview tab

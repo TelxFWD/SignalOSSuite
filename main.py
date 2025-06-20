@@ -412,24 +412,100 @@ def simulate_signal():
         'signal': signal_data
     })
 
+# Desktop-API Integration Endpoints
+@app.route('/api/ping', methods=['GET'])
+def api_ping():
+    """Health ping for desktop app sync"""
+    return jsonify({
+        'status': 'online',
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '1.0.0'
+    })
+
+@app.route('/api/license', methods=['GET'])
+def api_license():
+    """Get user license information"""
+    return jsonify({
+        'license_type': 'premium',
+        'expires_at': (datetime.utcnow() + timedelta(days=30)).isoformat(),
+        'features': {
+            'shadow_mode': True,
+            'advanced_strategies': True,
+            'unlimited_signals': True
+        }
+    })
+
+@app.route('/api/config', methods=['GET'])
+def api_config():
+    """Get system configuration"""
+    return jsonify({
+        'mt5_enabled': True,
+        'telegram_enabled': True,
+        'shadow_mode': True,
+        'max_risk': 2.0,
+        'default_lot_size': 0.01
+    })
+
+@app.route('/api/signals/parse', methods=['POST'])
+def api_parse_signal():
+    """Parse signal text using advanced parser"""
+    data = request.get_json()
+    signal_text = data.get('text', '')
+    
+    if not signal_text:
+        return jsonify({'error': 'No signal text provided'}), 400
+    
+    try:
+        from signal_parser import SignalParser
+        parser = SignalParser()
+        result = parser.parse_signal(signal_text)
+        
+        # Save to database if valid
+        if result.get('status') == 'VALID':
+            signal_id = parser.save_signal(result)
+            result['signal_id'] = signal_id
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Parser error: {str(e)}'}), 500
+
+@app.route('/api/health/comprehensive', methods=['GET'])
+def api_comprehensive_health():
+    """Get comprehensive system health"""
+    try:
+        from health_monitor import get_system_health
+        health_data = get_system_health()
+        return jsonify(health_data)
+    except Exception as e:
+        return jsonify({'error': f'Health check failed: {str(e)}'}), 500
+
 # SocketIO events for real-time updates
 @socketio.on('connect')
 def handle_connect():
-    print('Client connected')
+    try:
+        print(f'Client connected: {request.sid}')
+        socketio.emit('connection_confirmed', {'status': 'connected'}, room=request.sid)
+    except Exception as e:
+        print(f'Connect error: {e}')
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print('Client disconnected')
+    try:
+        print(f'Client disconnected: {request.sid}')
+        # Clean up session-specific data here
+    except Exception as e:
+        print(f'Disconnect error: {e}')
 
 @socketio.on('get_health')
 def handle_get_health():
-    health_data = {
-        'status': 'healthy',
-        'cpu': random.randint(10, 60),
-        'memory': random.randint(20, 80),
-        'signals_today': random.randint(5, 25)
-    }
-    return health_data
+    try:
+        print('Health check requested')
+        from health_monitor import get_system_health
+        health_data = get_system_health()
+        socketio.emit('health_update', health_data, room=request.sid)
+    except Exception as e:
+        print(f'Health check error: {e}')
+        socketio.emit('error', {'message': 'Health check failed'}, room=request.sid)
 
 # Create required directories
 import os

@@ -1,4 +1,10 @@
 // Simple SignalOS Dashboard - Direct DOM Updates
+// Add global unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    event.preventDefault();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Simple dashboard initializing...');
     

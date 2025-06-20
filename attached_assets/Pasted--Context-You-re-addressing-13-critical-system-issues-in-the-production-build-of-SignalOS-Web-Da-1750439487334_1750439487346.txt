@@ -1,0 +1,119 @@
+🧠 Context:
+You’re addressing 13 critical system issues in the production build of SignalOS (Web Dashboard + Admin Panel + Windows App + MT5 EA). These issues affect WebSocket stability, MT5 connectivity, signal parsing, stealth logic, API sync, and system health monitoring.
+
+🎯 Objective:
+- Fix all listed bugs
+- Ensure proper system sync between Web, Parser, MT5
+- Finalize integration for a fully automated and production-ready SignalOS instance
+
+---
+
+🔧 Critical Bugs to Fix:
+
+1. ✅ **WebSocket Session Crash**
+   - Bug: `KeyError: 'Session is disconnected'` in SocketIO
+   - Fix:
+     - Add `try/except` around session reference in server
+     - Use `socket.on('disconnect')` to clean session state safely
+     - Confirm Gunicorn/WebSocket worker uses async class (`--worker-class eventlet` or `gevent`)
+
+2. ✅ **Port Conflict (5000)**
+   - Bug: Address already in use
+   - Fix:
+     - Check for existing process using `lsof -i :5000`
+     - Use dynamic or environment-based port configuration
+     - Kill conflicting process or auto-select open port fallback
+
+3. ✅ **JavaScript Unhandled Promise Rejections**
+   - Bug: Multiple `unhandledrejection` logs in browser console
+   - Fix:
+     - Add `.catch()` to all async requests in frontend API handlers
+     - Add global handler: `window.addEventListener('unhandledrejection', handler)`
+
+---
+
+💻 Desktop App Bugs:
+
+4. ✅ **Gold/XAU Parsing Failure**
+   - Bug: `"Gold Long Entry: 1980 SL: 1975 TP: 1990"` fails
+   - Fix:
+     - Extend parser rule with synonyms: `Gold`, `XAUUSD`, `GOLD/USD`
+     - Normalize inputs before tokenization (regex cleanup)
+
+5. ✅ **MT5 File Sync Failure**
+   - Bug: Terminal not configured/found
+   - Fix:
+     - Validate MT5 terminal path manually
+     - Add error fallback or force prompt on app start
+     - Improve config checks in `mt5_sync.py`
+
+6. ✅ **Telegram API Credentials Missing**
+   - Bug: Live signal reception fails
+   - Fix:
+     - Add credentials config to `.env` or `settings.py`
+     - Load `api_id`, `api_hash`, and session token from secure storage
+
+7. ✅ **Shadow Mode Not Masking Trades**
+   - Bug: SL/TP removal + comment masking not applied
+   - Fix:
+     - Recheck conditional inside `apply_stealth_settings()`
+     - Add log output for before/after trade object
+     - Make sure EA respects empty SL/TP if stealth is on
+
+8. ✅ **Health Monitor Missing Fields**
+   - Bug: Health panel shows partial info
+   - Fix:
+     - Add missing fields in `health_monitor.py`: EA heartbeat, last signal timestamp, parser version
+     - Sync with frontend health model
+
+---
+
+🌐 Dashboard Issues:
+
+9. ✅ **Admin Auth Failing**
+   - Bug: Valid credentials return 200 but do not login
+   - Fix:
+     - Recheck JWT token validation logic
+     - Confirm `access_token` is saved to localStorage/cookies and used on refresh
+
+10. ✅ **API Data Loading Error**
+   - Bug: "Error loading initial data: {}"
+   - Fix:
+     - Check for race conditions in initial load lifecycle
+     - Add fallback state in React for `undefined` API return
+     - Wrap each major API call with `try/catch + loading state + error toast`
+
+---
+
+🔗 Integration Bugs:
+
+11. ✅ **Desktop ↔ API Sync Missing**
+   - Bug: No sync for login, config, or license
+   - Fix:
+     - Add `/api/ping`, `/api/license`, `/api/config` endpoints
+     - Create periodic background job in desktop app to sync every 15s or on state change
+
+12. ✅ **MT5 Terminal Auto-Detection**
+   - Bug: No terminals found
+   - Fix:
+     - Add support for Windows drive search (`C:/Program Files/MetaTrader 5`)
+     - Allow manual override path on first-time config
+
+13. ✅ **SignalOS EA Not Installed**
+   - Bug: EA not found → no execution
+   - Fix:
+     - Add auto-copy of `.ex5` file to `/MQL5/Experts/`
+     - Trigger `config.ini` creation if missing
+     - Prompt user to drag EA to chart + link docs/video
+
+---
+
+📦 Output Required:
+- ✅ `fix_log.txt` with bug IDs and resolutions
+- ✅ Updated `settings.py`, `.env`, `health_monitor.py`, `signal_parser.py`
+- ✅ Screenshot of working Gold/XAU signal parsed and logged
+- ✅ Working signal flow: Telegram → Parser → MT5 EA → Trade placed
+- ✅ Log showing WebSocket stable and MT5 synced
+
+🎯 Final Goal:
+A fully working, stable SignalOS system with no runtime crashes, real-time WebSocket status updates, Telegram live signal parsing, EA trades triggered, and admin panel functional with full backend sync.

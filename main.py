@@ -25,31 +25,7 @@ except ImportError:
 @app.route('/')
 def index():
     """Main dashboard page"""
-    try:
-        return render_template('premium_dashboard.html')
-    except Exception as e:
-        return f"""
-        <html>
-        <head>
-            <title>SignalOS - Premium Trading Platform</title>
-            <link rel="stylesheet" href="/static/css/premium.css">
-        </head>
-        <body>
-            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
-                <div style="text-align: center;">
-                    <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
-                    <h2 class="text-gradient" style="font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">SignalOS</h2>
-                    <p style="color: var(--dark-400); margin-bottom: 2rem;">Premium Forex Signal Automation</p>
-                    <div class="glass-card" style="padding: 2rem; max-width: 400px;">
-                        <h3 style="color: white; margin-bottom: 1rem;">Quick Access</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <a href="/api/health" class="btn btn-secondary">System Health</a>
-                            <a href="/admin/login" class="btn btn-primary">Admin Panel</a>
-                        </div>
-                    </div>
-                    <p style="color: var(--dark-500); font-size: 0.75rem; margin-top: 1rem;">Template loading issue: {str(e)}</p>
-                </div>
-            </div>
+    return render_template('dashboard.html')
         </body>
         </html>
         """, 200

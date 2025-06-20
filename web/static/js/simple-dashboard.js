@@ -1,3 +1,4 @@
+
 // SignalOS Dashboard JavaScript
 console.log('SignalOS Dashboard loading...');
 
@@ -17,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-refresh every 30 seconds
     setInterval(loadDashboardData, 30000);
+    
+    console.log('Simple dashboard initializing...');
 });
 
 function loadDashboardData() {
@@ -89,7 +92,7 @@ function updateServiceStatus(elementId, status) {
     const element = document.getElementById(elementId);
     if (element) {
         const isConnected = status === true;
-        element.className = 'service-status ' + (isConnected ? 'status-online' : 'status-offline');
+        element.className = 'status-badge ' + (isConnected ? 'status-online' : 'status-offline');
         element.textContent = isConnected ? 'Connected' : 'Disconnected';
     }
 }
@@ -131,15 +134,15 @@ function showTab(tabName) {
 
 // Dashboard action functions
 function setupTelegram() {
-    alert('Telegram setup functionality');
+    alert('Telegram setup functionality - Coming soon!');
 }
 
 function addMT5Terminal() {
-    alert('MT5 terminal setup functionality');
+    alert('MT5 terminal setup functionality - Coming soon!');
 }
 
 function createStrategy() {
-    alert('Strategy creation functionality');
+    alert('Strategy creation functionality - Coming soon!');
 }
 
 function simulateSignal() {
@@ -151,9 +154,13 @@ function simulateSignal() {
     .then(response => response.json())
     .then(data => {
         console.log('Signal simulated:', data);
+        alert('Signal simulated successfully!');
         loadDashboardData();
     })
-    .catch(error => console.error('Signal simulation error:', error));
+    .catch(error => {
+        console.error('Signal simulation error:', error);
+        alert('Signal simulation failed!');
+    });
 }
 
 function toggleShadowMode() {
@@ -165,6 +172,10 @@ function toggleShadowMode() {
         if (button && data.shadow_mode !== undefined) {
             button.textContent = data.shadow_mode ? 'Disable Shadow Mode' : 'Enable Shadow Mode';
         }
+        alert('Shadow mode ' + (data.shadow_mode ? 'enabled' : 'disabled'));
     })
-    .catch(error => console.error('Shadow mode error:', error));
+    .catch(error => {
+        console.error('Shadow mode error:', error);
+        alert('Shadow mode toggle failed!');
+    });
 }

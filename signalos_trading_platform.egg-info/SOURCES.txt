@@ -1,6 +1,0 @@
-pyproject.toml
-signalos_trading_platform.egg-info/PKG-INFO
-signalos_trading_platform.egg-info/SOURCES.txt
-signalos_trading_platform.egg-info/dependency_links.txt
-signalos_trading_platform.egg-info/requires.txt
-signalos_trading_platform.egg-info/top_level.txt

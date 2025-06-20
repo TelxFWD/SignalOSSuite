@@ -25,6 +25,16 @@ except ImportError:
 @app.route('/')
 def index():
     """Main dashboard page"""
+    return render_template('premium_v2_dashboard.html')
+
+@app.route('/dashboard')
+def dashboard():
+    """Alternative dashboard route"""
+    return render_template('premium_v2_dashboard.html')
+
+@app.route('/old-dashboard')
+def old_dashboard():
+    """Legacy dashboard for reference"""
     return render_template('dashboard.html')
 
 @app.route('/api/health')

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalOS - Premium Trading Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/framer-motion@10/dist/framer-motion.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0E1116',
+                        card: '#1A1D23',
+                        primary: '#3B82F6',
+                        accent: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                        success: '#10B981',
+                        border: '#374151',
+                        'text-primary': '#F9FAFB',
+                        'text-secondary': '#9CA3AF',
+                        'text-muted': '#6B7280'
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                        sm: '4px',
+                        md: '8px',
+                        lg: '12px'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'glow': 'glow 2s ease-in-out infinite alternate'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px #3B82F6' },
+                            '100%': { boxShadow: '0 0 20px #3B82F6, 0 0 30px #3B82F6' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0E1116 0%, #1A1D23 100%);
+        }
+        .glass-card {
+            background: rgba(26, 29, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+        }
+        .glass-sidebar {
+            background: rgba(14, 17, 22, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(55, 65, 81, 0.2);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #10B981; animation: pulse 2s infinite; }
+        .status-offline { background-color: #EF4444; }
+        .status-warning { background-color: #F59E0B; }
+        .gradient-text {
+            background: linear-gradient(45deg, #3B82F6, #10B981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hover-glow:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 glass-sidebar flex flex-col">
+            <!-- Logo -->
+            <div class="p-6 border-b border-border">
+                <h1 class="text-2xl font-bold gradient-text">SignalOS</h1>
+                <p class="text-text-secondary text-sm mt-1">Premium Trading Platform</p>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" class="nav-item active flex items-center px-4 py-3 rounded-lg bg-primary/20 text-primary border border-primary/30" data-tab="overview">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-text-secondary hover:bg-card/50 hover:text-text-primary transition-all" data-tab="signals">
+                    <i data-lucide="radio" class="w-5 h-5 mr-3"></i>
+                    <span>Signals</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-text-secondary hover:bg-card/50 hover:text-text-primary transition-all" data-tab="terminals">
+                    <i data-lucide="monitor" class="w-5 h-5 mr-3"></i>
+                    <span>MT5 Terminals</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-text-secondary hover:bg-card/50 hover:text-text-primary transition-all" data-tab="telegram">
+                    <i data-lucide="message-circle" class="w-5 h-5 mr-3"></i>
+                    <span>Telegram</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-text-secondary hover:bg-card/50 hover:text-text-primary transition-all" data-tab="strategies">
+                    <i data-lucide="target" class="w-5 h-5 mr-3"></i>
+                    <span>Strategies</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-text-secondary hover:bg-card/50 hover:text-text-primary transition-all" data-tab="settings">
+                    <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-border">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Demo User</p>
+                        <p class="text-xs text-text-secondary">Pro License</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="glass-card p-6 m-4 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold">Dashboard Overview</h2>
+                        <p class="text-text-secondary mt-1">Real-time trading performance metrics</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- System Status -->
+                        <div id="system-status" class="flex items-center px-4 py-2 glass-card rounded-lg">
+                            <span class="status-dot status-online"></span>
+                            <span class="text-sm font-medium">All Systems Online</span>
+                        </div>
+                        <!-- Last Updated -->
+                        <div class="text-xs text-text-muted">
+                            Last updated: <span id="last-updated">--</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Dashboard Content -->
+            <main class="flex-1 overflow-auto p-4 space-y-6" id="dashboard-content">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Total Pips Card -->
+                    <div class="glass-card p-6 rounded-xl hover-glow transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">TOTAL PIPS</p>
+                                <p id="total-pips" class="text-3xl font-bold text-success mt-2">--</p>
+                                <p id="pips-change" class="text-sm text-success mt-1">--</p>
+                            </div>
+                            <div class="w-12 h-12 bg-success/20 rounded-lg flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Win Rate Card -->
+                    <div class="glass-card p-6 rounded-xl hover-glow transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">WIN RATE</p>
+                                <p id="win-rate" class="text-3xl font-bold text-primary mt-2">--</p>
+                                <p class="text-sm text-text-secondary mt-1">Last 30 days</p>
+                            </div>
+                            <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                                <i data-lucide="percent" class="w-6 h-6 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trades Today Card -->
+                    <div class="glass-card p-6 rounded-xl hover-glow transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">TRADES TODAY</p>
+                                <p id="trades-today" class="text-3xl font-bold text-warning mt-2">--</p>
+                                <p id="trades-change" class="text-sm text-warning mt-1">--</p>
+                            </div>
+                            <div class="w-12 h-12 bg-warning/20 rounded-lg flex items-center justify-center">
+                                <i data-lucide="activity" class="w-6 h-6 text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Signals Card -->
+                    <div class="glass-card p-6 rounded-xl hover-glow transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">ACTIVE SIGNALS</p>
+                                <p id="active-signals" class="text-3xl font-bold text-accent mt-2">--</p>
+                                <p class="text-sm text-text-secondary mt-1">Currently monitoring</p>
+                            </div>
+                            <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
+                                <i data-lucide="radio" class="w-6 h-6 text-accent"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Quick Actions Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Performance Chart -->
+                    <div class="lg:col-span-2 glass-card p-6 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">Performance Chart</h3>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-xs bg-primary/20 text-primary rounded-lg">7D</button>
+                                <button class="px-3 py-1 text-xs text-text-secondary hover:bg-card rounded-lg">30D</button>
+                                <button class="px-3 py-1 text-xs text-text-secondary hover:bg-card rounded-lg">90D</button>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="glass-card p-6 rounded-xl">
+                        <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button id="toggle-shadow-mode" class="w-full flex items-center justify-between p-3 bg-primary/10 hover:bg-primary/20 rounded-lg transition-all group">
+                                <div class="flex items-center">
+                                    <i data-lucide="eye" class="w-5 h-5 mr-3 text-primary"></i>
+                                    <span>Shadow Mode</span>
+                                </div>
+                                <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center group-hover:animate-glow">
+                                    <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                                </div>
+                            </button>
+
+                            <button id="simulate-signal" class="w-full flex items-center p-3 bg-accent/10 hover:bg-accent/20 rounded-lg transition-all">
+                                <i data-lucide="zap" class="w-5 h-5 mr-3 text-accent"></i>
+                                <span>Simulate Signal</span>
+                            </button>
+
+                            <button class="w-full flex items-center p-3 bg-warning/10 hover:bg-warning/20 rounded-lg transition-all">
+                                <i data-lucide="settings" class="w-5 h-5 mr-3 text-warning"></i>
+                                <span>Setup Telegram</span>
+                            </button>
+
+                            <button class="w-full flex items-center p-3 bg-danger/10 hover:bg-danger/20 rounded-lg transition-all">
+                                <i data-lucide="power" class="w-5 h-5 mr-3 text-danger"></i>
+                                <span>Emergency Stop</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Health Panel -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-lg font-semibold mb-4">System Health</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="health-status">
+                        <!-- Health items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script src="/static/js/premium-v2-dashboard.js"></script>
+</body>
+</html>

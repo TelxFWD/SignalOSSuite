@@ -1,0 +1,123 @@
+🧠 Context:
+SignalOS is a next-gen trading signal copier platform with a premium UI and partially complete backend. A feature gap analysis has been performed comparing it with industry leaders like TSC.
+
+Goal: Implement the missing 80% functionality in a phased, stable, and modular way — without disturbing the current working modules.
+
+---
+
+🎯 Phase 1: High-Priority Features – Core Trading Engine
+
+1. ✅ **Signal Source Expansion**
+   - Enable multiple Telegram account sessions
+   - Detect signal from private/public channels, groups, bots, chats
+   - Support parsing from channels with copying disabled (using session-based access)
+   - Implement signal edit tracking and re-execution
+
+2. ✅ **Full Order Type Support**
+   - Parse and execute BUY, SELL, BUY LIMIT/STOP, SELL LIMIT/STOP
+   - Add pending order placement logic in MT5 EA or Python bridge
+   - Add Smart Entry Mode:
+     - Executes if current price within X pips of signal
+     - Delays until spread narrows or price matches zone
+
+3. ✅ **Provider Command Execution**
+   - Parse command strings like: "Close 50%", "TP to 1.0932", "SL to entry"
+   - Add actions in the trade engine:
+     - Modify existing order
+     - Partially close by % or lotsize
+     - Cancel pending
+     - Break-even
+     - Track orders by ticket/message_id
+
+4. ✅ **TP/SL Multi-Level & Movement Logic**
+   - Support multiple TP levels (TP1, TP2, TP3…)
+   - SL movement logic:
+     - SL to entry after TP1
+     - SL to TP1 after TP2, etc.
+   - Override or append TP/SL values by user strategy
+
+5. ✅ **Real MT5 Execution (via JSON or Direct DLL)**
+   - Fix MT5 communication path
+   - Validate order result
+   - Store MT5 ticket + reference message link
+
+---
+
+🎯 Phase 2: Medium Priority Features – Risk Management + Control Layer
+
+6. ✅ **Equity Guardian + Drawdown Management**
+   - Auto-close all trades at profit/loss threshold ($ or %)
+   - Stop accepting new signals after threshold hit
+   - Apply rules globally or per provider
+
+7. ✅ **Advanced Lot Size Management**
+   - Support:
+     - Fixed lots
+     - % of balance
+     - Risk-to-SL ratio
+     - From signal message (e.g., "risk 0.5%")
+   - Validate pip value calculation per pair
+
+8. ✅ **Trailing SL + Break-even Logic**
+   - Fixed pip trailing
+   - R:R based trailing
+   - Trigger break-even after X pips or TP1
+
+9. ✅ **News Filter + Time Window Rules**
+   - Block signals X mins before/after news events (integrate with ForexFactory/News API)
+   - Define user time ranges (e.g., 10 AM – 4 PM only)
+   - Limit signal volume (per day/channel/pair)
+
+10. ✅ **Entry Point & Spread Logic**
+    - Adjust entry with +/- pip buffer
+    - Allow user to pick “Best”, “Average”, or 2nd entry from message
+    - Validate entry deviation vs market price before execution
+
+---
+
+🎯 Phase 3: Advanced Features – Strategy Personalization + White Label
+
+11. ✅ **Grid + Reverse Strategy**
+   - Open layered grid if signal matches preset
+   - Reverse BUY → SELL logic on user toggle
+
+12. ✅ **Prop Firm Stealth Layer**
+   - Auto-random delay
+   - Remove comments
+   - SL/TP masking
+   - Cap lots per pair
+
+13. ✅ **Signal Strategy Rules**
+   - Assign strategy to each provider/pair combo
+   - Rule engine: JSON or GUI editor
+   - Include RR config, SL logic, SL-to-entry settings
+
+14. ✅ **Analytics + Signal Quality**
+   - TP hit %, average RR, slippage delay, missed entry %
+   - Compare providers
+   - Export data
+   - Show live trade feed by provider
+
+15. ✅ **Replay & Recovery**
+   - Let users re-trigger missed signals manually
+   - Fix parsing errors and resend signals via Admin panel
+
+---
+
+🧱 Implementation Notes:
+- Use modular services: `signal_parser.py`, `execution_engine.py`, `risk_manager.py`, `mt5_bridge.py`
+- Ensure trade logs always track: timestamp, signal source, parser version, execution status
+- Enable admin panel to toggle each rule (e.g., break-even ON/OFF, SL buffer = 5 pips)
+
+---
+
+📦 Deliverables:
+- Fully integrated signal execution engine
+- Rule-based and AI-enhanced parser
+- Signal edit/update → modifies trade
+- MT5 sync confirmed with ticket IDs
+- Real-time health and performance tracking
+
+🎯 End Goal:
+Bring SignalOS to 100% feature parity (and beyond) with TSC — with a modern UI, real AI parsing, stealth capability, and full user/provider control.
+

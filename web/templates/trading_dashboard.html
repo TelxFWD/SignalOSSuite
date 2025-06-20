@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalOS - Trading Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0E1116',
+                        card: '#1A1D23',
+                        primary: '#3B82F6',
+                        accent: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(26, 29, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-primary">Trading Management</h1>
+                <p class="text-gray-400">Configure signals, strategies, and stealth settings</p>
+            </div>
+            <a href="/" class="px-4 py-2 bg-card rounded-lg hover:bg-gray-700 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4 inline mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="flex space-x-1 bg-card rounded-lg p-1">
+                <button class="tab-button active px-4 py-2 rounded-md transition-colors" data-tab="signals">
+                    <i data-lucide="radio" class="w-4 h-4 inline mr-2"></i>
+                    Signal Parser
+                </button>
+                <button class="tab-button px-4 py-2 rounded-md transition-colors" data-tab="telegram">
+                    <i data-lucide="message-circle" class="w-4 h-4 inline mr-2"></i>
+                    Telegram
+                </button>
+                <button class="tab-button px-4 py-2 rounded-md transition-colors" data-tab="strategies">
+                    <i data-lucide="target" class="w-4 h-4 inline mr-2"></i>
+                    Strategies
+                </button>
+                <button class="tab-button px-4 py-2 rounded-md transition-colors" data-tab="stealth">
+                    <i data-lucide="eye-off" class="w-4 h-4 inline mr-2"></i>
+                    Stealth
+                </button>
+                <button class="tab-button px-4 py-2 rounded-md transition-colors" data-tab="orders">
+                    <i data-lucide="list" class="w-4 h-4 inline mr-2"></i>
+                    Active Orders
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="signals-tab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Signal Parser -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Advanced Signal Parser</h3>
+                    <form id="signal-parser-form">
+                        <textarea id="signal-text" rows="8" 
+                                class="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white resize-none focus:border-primary focus:outline-none"
+                                placeholder="Paste signal text here...
+
+Example:
+🔥 BUY EURUSD
+
+Entry: 1.08500
+SL: 1.08000
+TP1: 1.09000
+TP2: 1.09500
+
+Risk: 2%"></textarea>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Provider ID</label>
+                                <input type="text" id="provider-id" value="demo_provider"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Options</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="apply-strategy" checked class="mr-2">
+                                        <span class="text-sm">Apply Strategy</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="apply-stealth" checked class="mr-2">
+                                        <span class="text-sm">Apply Stealth</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full mt-4 bg-primary hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors">
+                            <i data-lucide="zap" class="w-4 h-4 inline mr-2"></i>
+                            Parse Signal
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Parse Results -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Parse Results</h3>
+                    <div id="parse-results" class="text-sm">
+                        <div class="text-gray-400 text-center py-8">
+                            Parse a signal to see results here
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="telegram-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Add Session -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Add Telegram Session</h3>
+                    <form id="telegram-session-form">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Phone Number</label>
+                                <input type="text" id="phone" placeholder="+1234567890"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">API ID</label>
+                                <input type="text" id="api-id" placeholder="123456"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">API Hash</label>
+                                <input type="text" id="api-hash" placeholder="abcdef123456"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full mt-4 bg-accent hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                            Add Session
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sessions List -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Active Sessions</h3>
+                    <div id="sessions-list">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channels Section -->
+            <div class="mt-6">
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Monitored Channels</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div>
+                            <input type="text" id="channel-name" placeholder="Channel Name"
+                                class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <input type="text" id="channel-username" placeholder="@channel_username"
+                                class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <button id="add-channel-btn" class="w-full bg-primary hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors">
+                                Add Channel
+                            </button>
+                        </div>
+                    </div>
+                    <div id="channels-list" class="mt-4">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="strategies-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Create Strategy -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Create Strategy</h3>
+                    <form id="strategy-form">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Strategy Name</label>
+                                <input type="text" id="strategy-name" placeholder="My Trading Strategy"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Strategy Type</label>
+                                <select id="strategy-type" class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                                    <option value="CONSERVATIVE">Conservative</option>
+                                    <option value="AGGRESSIVE">Aggressive</option>
+                                    <option value="SCALPING">Scalping</option>
+                                    <option value="SWING">Swing Trading</option>
+                                    <option value="GRID">Grid</option>
+                                    <option value="CUSTOM">Custom</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Description</label>
+                                <textarea id="strategy-description" rows="3"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none"
+                                    placeholder="Describe your strategy..."></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full mt-4 bg-accent hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                            Create Strategy
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Strategies List -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Active Strategies</h3>
+                    <div id="strategies-list">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="stealth-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Stealth Settings -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Stealth Settings</h3>
+                    <form id="stealth-form">
+                        <div class="space-y-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="stealth-enabled" class="mr-3">
+                                <span class="font-medium">Enable Stealth Mode</span>
+                            </label>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Random Delay (seconds)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" id="delay-min" placeholder="Min" value="1" step="0.1"
+                                        class="bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                                    <input type="number" id="delay-max" placeholder="Max" value="10" step="0.1"
+                                        class="bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Lot Randomization (%)</label>
+                                <input type="number" id="lot-randomization" value="5" step="0.1"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Max Lots Per Pair</label>
+                                <input type="number" id="max-lots-per-pair" value="0.1" step="0.01"
+                                    class="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-primary focus:outline-none">
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="remove-comments" checked class="mr-3">
+                                    <span>Remove Comments</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="mask-sl-tp" checked class="mr-3">
+                                    <span>Mask SL/TP</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="synthetic-trades" class="mr-3">
+                                    <span>Generate Synthetic Trades</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full mt-4 bg-warning hover:bg-yellow-600 text-white py-2 px-4 rounded-lg transition-colors">
+                            <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>
+                            Update Settings
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Stealth Statistics -->
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="text-xl font-semibold mb-4">Stealth Statistics</h3>
+                    <div id="stealth-stats">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="orders-tab" class="tab-content hidden">
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold">Active Orders</h3>
+                    <button id="refresh-orders" class="px-4 py-2 bg-primary hover:bg-blue-600 rounded-lg transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div id="orders-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/trading-dashboard.js"></script>
+    <script>
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

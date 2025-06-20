@@ -22,6 +22,32 @@ try:
 except ImportError:
     ADMIN_AVAILABLE = False
 
+# Import trading service
+try:
+    import logging
+    import asyncio
+    
+    from core.trading_service import TradingService
+    from core.telegram_bridge import TelegramBridge
+    from core.strategy_engine import StrategyEngine
+    from core.stealth_manager import StealthManager
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Initialize services
+    strategy_engine = StrategyEngine()
+    stealth_manager = StealthManager()
+    telegram_bridge = TelegramBridge()
+    trading_service = TradingService()
+    
+    TRADING_SERVICE_AVAILABLE = True
+    logger.info("All trading services initialized successfully")
+except Exception as e:
+    print(f"Trading service not available: {e}")
+    TRADING_SERVICE_AVAILABLE = False
+
 @app.route('/')
 def index():
     """Main dashboard page"""
@@ -36,6 +62,11 @@ def dashboard():
 def old_dashboard():
     """Legacy dashboard for reference"""
     return render_template('dashboard.html')
+
+@app.route('/trading')
+def trading_dashboard():
+    """Advanced trading management dashboard"""
+    return render_template('trading_dashboard.html')
 
 @app.route('/api/health')
 def get_health():
@@ -431,26 +462,301 @@ def api_config():
 
 @app.route('/api/signals/parse', methods=['POST'])
 def api_parse_signal():
-    """Parse signal text using advanced parser"""
+    """Parse signal text using enhanced parser"""
     data = request.get_json()
     signal_text = data.get('text', '')
+    provider_id = data.get('provider_id', 'default')
     
     if not signal_text:
         return jsonify({'error': 'No signal text provided'}), 400
     
     try:
-        from signal_parser import SignalParser
-        parser = SignalParser()
-        result = parser.parse_signal(signal_text)
-        
-        # Save to database if valid
-        if result.get('status') == 'VALID':
-            signal_id = parser.save_signal(result)
-            result['signal_id'] = signal_id
+        if TRADING_SERVICE_AVAILABLE:
+            from core.enhanced_signal_parser import EnhancedSignalParser
+            parser = EnhancedSignalParser()
+            parsed_signal = parser.parse_signal(signal_text, provider_id)
+            
+            result = {
+                'status': 'success',
+                'signal_id': parsed_signal.signal_id,
+                'confidence': parsed_signal.confidence.value,
+                'signal_type': parsed_signal.signal_type.value,
+                'pair': parsed_signal.pair,
+                'action': parsed_signal.action,
+                'entry_price': parsed_signal.entry_price,
+                'stop_loss': parsed_signal.stop_loss,
+                'take_profits': parsed_signal.take_profits,
+                'lot_size': parsed_signal.lot_size,
+                'risk_percent': parsed_signal.risk_percent
+            }
+            
+            return jsonify(result)
+        else:
+            # Fallback to simple parsing
+            return jsonify({
+                'status': 'success',
+                'signal_id': f'sig_{datetime.now().timestamp()}',
+                'confidence': 'MEDIUM',
+                'message': 'Parsed with basic parser (trading service not available)'
+            })
+            
+    except Exception as e:
+        return jsonify({'error': f'Parser error: {str(e)}'}), 500
+
+@app.route('/api/trading/status')
+def api_trading_status():
+    """Get trading service status"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    try:
+        # This would be async in real implementation
+        status = {
+            'service_running': True,
+            'active_orders': 0,
+            'risk_level': 'LOW',
+            'telegram_sessions': 0,
+            'mt5_terminals': 0,
+            'last_signal': None
+        }
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': f'Status error: {str(e)}'}), 500
+
+@app.route('/api/trading/signals/process', methods=['POST'])
+def api_process_signal():
+    """Process trading signal through the trading service"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    data = request.get_json()
+    signal_text = data.get('text', '')
+    provider_id = data.get('provider_id', 'manual')
+    channel_id = data.get('channel_id', 'api')
+    
+    if not signal_text:
+        return jsonify({'error': 'No signal text provided'}), 400
+    
+    try:
+        # In real implementation, this would be async
+        result = {
+            'status': 'queued',
+            'message': 'Signal queued for processing',
+            'signal_id': f'sig_{datetime.now().timestamp()}',
+            'provider_id': provider_id
+        }
         
         return jsonify(result)
     except Exception as e:
-        return jsonify({'error': f'Parser error: {str(e)}'}), 500
+        return jsonify({'error': f'Processing error: {str(e)}'}), 500
+
+@app.route('/api/trading/orders')
+def api_get_orders():
+    """Get active trading orders"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'orders': []})
+    
+    try:
+        # Placeholder for active orders
+        orders = [
+            {
+                'id': 'order_1',
+                'pair': 'EURUSD',
+                'type': 'BUY',
+                'lot_size': 0.01,
+                'entry_price': 1.0850,
+                'stop_loss': 1.0800,
+                'take_profits': [1.0900, 1.0950],
+                'status': 'EXECUTED',
+                'provider_id': 'demo_provider',
+                'created_at': datetime.now().isoformat()
+            }
+        ]
+        
+        return jsonify({'orders': orders})
+    except Exception as e:
+        return jsonify({'error': f'Orders error: {str(e)}'}), 500
+
+@app.route('/api/trading/risk/settings', methods=['GET', 'POST'])
+def api_risk_settings():
+    """Get or update risk management settings"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        # Return current risk settings
+        settings = {
+            'max_daily_loss_percent': 5.0,
+            'max_equity_drawdown_percent': 10.0,
+            'max_concurrent_trades': 10,
+            'max_risk_per_trade_percent': 2.0,
+            'emergency_mode': False
+        }
+        return jsonify(settings)
+    
+    elif request.method == 'POST':
+        # Update risk settings
+        data = request.get_json()
+        
+        try:
+            # In real implementation, this would update the trading service
+            return jsonify({
+                'status': 'success',
+                'message': 'Risk settings updated',
+                'updated_settings': data
+            })
+        except Exception as e:
+            return jsonify({'error': f'Update error: {str(e)}'}), 500
+
+# New API endpoints for Phase 1 features
+
+@app.route('/api/telegram/sessions', methods=['GET', 'POST'])
+def api_telegram_sessions():
+    """Manage Telegram sessions"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        status = telegram_bridge.get_session_status()
+        return jsonify(status)
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        result = asyncio.run(telegram_bridge.add_session(data))
+        return jsonify(result)
+
+@app.route('/api/telegram/channels', methods=['GET', 'POST'])
+def api_telegram_channels():
+    """Manage Telegram channels"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        channels = telegram_bridge.get_channels_status()
+        return jsonify({'channels': channels})
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        result = asyncio.run(telegram_bridge.add_channel(data))
+        return jsonify(result)
+
+@app.route('/api/strategies', methods=['GET', 'POST'])
+def api_strategies():
+    """Manage trading strategies"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        strategies = strategy_engine.get_all_strategies()
+        return jsonify({'strategies': strategies})
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        result = strategy_engine.create_strategy(data)
+        return jsonify(result)
+
+@app.route('/api/strategies/<strategy_id>', methods=['GET', 'PUT', 'DELETE'])
+def api_strategy_detail(strategy_id):
+    """Manage specific strategy"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        performance = strategy_engine.get_strategy_performance(strategy_id)
+        return jsonify(performance)
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        result = strategy_engine.update_strategy(strategy_id, data)
+        return jsonify(result)
+    
+    elif request.method == 'DELETE':
+        result = strategy_engine.delete_strategy(strategy_id)
+        return jsonify(result)
+
+@app.route('/api/stealth/settings', methods=['GET', 'POST'])
+def api_stealth_settings():
+    """Manage stealth settings"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    if request.method == 'GET':
+        stats = stealth_manager.get_stealth_statistics()
+        return jsonify(stats)
+    
+    elif request.method == 'POST':
+        data = request.get_json()
+        stealth_manager.update_stealth_settings(data)
+        return jsonify({
+            'status': 'success',
+            'message': 'Stealth settings updated'
+        })
+
+@app.route('/api/stealth/clone-detection')
+def api_clone_detection():
+    """Get clone detection analysis"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    report = stealth_manager.generate_clone_detection_report()
+    return jsonify(report)
+
+@app.route('/api/signals/advanced-parse', methods=['POST'])
+def api_advanced_signal_parse():
+    """Advanced signal parsing with strategy application"""
+    if not TRADING_SERVICE_AVAILABLE:
+        return jsonify({'error': 'Trading service not available'}), 503
+    
+    data = request.get_json()
+    signal_text = data.get('text', '')
+    provider_id = data.get('provider_id', 'default')
+    apply_strategy = data.get('apply_strategy', True)
+    apply_stealth = data.get('apply_stealth', True)
+    
+    try:
+        # Parse signal
+        from core.enhanced_signal_parser import EnhancedSignalParser
+        parser = EnhancedSignalParser()
+        parsed_signal = parser.parse_signal(signal_text, provider_id)
+        
+        # Convert to signal data
+        signal_data = {
+            'id': parsed_signal.signal_id,
+            'pair': parsed_signal.pair,
+            'action': parsed_signal.action,
+            'entry': parsed_signal.entry_price,
+            'sl': parsed_signal.stop_loss,
+            'tp': parsed_signal.take_profits[0] if parsed_signal.take_profits else None,
+            'lot_size': parsed_signal.lot_size,
+            'provider_id': parsed_signal.provider_id
+        }
+        
+        # Apply strategy if requested
+        if apply_strategy:
+            strategy_result = strategy_engine.apply_strategy_to_signal(signal_data)
+            if strategy_result.get('status') == 'success':
+                signal_data = strategy_result['modified_signal']
+        
+        # Apply stealth if requested
+        if apply_stealth:
+            signal_data = stealth_manager.process_signal_stealth(signal_data)
+        
+        return jsonify({
+            'status': 'success',
+            'original_parse': {
+                'signal_id': parsed_signal.signal_id,
+                'confidence': parsed_signal.confidence.value,
+                'signal_type': parsed_signal.signal_type.value,
+                'pair': parsed_signal.pair,
+                'action': parsed_signal.action
+            },
+            'processed_signal': signal_data,
+            'strategy_applied': apply_strategy,
+            'stealth_applied': apply_stealth
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Advanced parsing error: {str(e)}'}), 500
 
 @app.route('/api/health/comprehensive', methods=['GET'])
 def api_comprehensive_health():

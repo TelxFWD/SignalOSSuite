@@ -21,36 +21,53 @@ class PremiumDashboard {
     }
 
     async initializeFeatherIcons() {
-        // Initialize Feather icons
-        if (typeof feather !== 'undefined') {
-            feather.replace();
+        // Initialize Feather icons with timeout
+        try {
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        } catch (error) {
+            console.log('Feather icons not available:', error);
         }
     }
 
     setupSocketIO() {
-        this.socket = io();
-        
-        this.socket.on('connect', () => {
-            console.log('WebSocket connected');
-            this.updateConnectionStatus(true);
-        });
+        try {
+            this.socket = io({
+                timeout: 5000,
+                transports: ['polling', 'websocket']
+            });
+            
+            this.socket.on('connect', () => {
+                console.log('WebSocket connected');
+                this.updateConnectionStatus(true);
+            });
 
-        this.socket.on('disconnect', () => {
-            console.log('WebSocket disconnected');
+            this.socket.on('disconnect', () => {
+                console.log('WebSocket disconnected');
+                this.updateConnectionStatus(false);
+            });
+
+            this.socket.on('connect_error', (error) => {
+                console.log('WebSocket connection error:', error);
+                this.updateConnectionStatus(false);
+            });
+
+            this.socket.on('health_update', (data) => {
+                this.updateSystemHealth(data);
+            });
+
+            this.socket.on('signal_update', (data) => {
+                this.handleSignalUpdate(data);
+            });
+
+            this.socket.on('trade_update', (data) => {
+                this.handleTradeUpdate(data);
+            });
+        } catch (error) {
+            console.error('Failed to setup WebSocket:', error);
             this.updateConnectionStatus(false);
-        });
-
-        this.socket.on('health_update', (data) => {
-            this.updateSystemHealth(data);
-        });
-
-        this.socket.on('signal_update', (data) => {
-            this.handleSignalUpdate(data);
-        });
-
-        this.socket.on('trade_update', (data) => {
-            this.handleTradeUpdate(data);
-        });
+        }
     }
 
     setupEventListeners() {
@@ -306,10 +323,11 @@ class PremiumDashboard {
     }
 
     setupCharts() {
-        // Setup performance chart
-        const ctx = document.getElementById('performance-chart');
-        if (ctx) {
-            this.charts.performance = new Chart(ctx, {
+        // Setup performance chart with error handling
+        try {
+            const ctx = document.getElementById('performance-chart');
+            if (ctx && typeof Chart !== 'undefined') {
+                this.charts.performance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],

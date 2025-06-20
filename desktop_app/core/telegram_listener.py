@@ -22,7 +22,7 @@ except ImportError:
     Channel = Chat = User = object
 
 from config.settings import settings
-from models.signal_model import RawSignal
+from signal_model import RawSignal
 from core.logger import get_logger
 
 logger = get_logger(__name__)

@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 from config.settings import settings
-from models.signal_model import ExecutionSignal, SignalStatus
+from signal_model import ExecutionSignal, SignalStatus
 from core.logger import get_logger
 
 logger = get_logger(__name__)

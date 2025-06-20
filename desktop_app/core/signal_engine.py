@@ -20,7 +20,7 @@ except ImportError:
             self.execution = type('obj', (object,), {'enabled': True})()
     settings = MockSettings()
 try:
-    from models.signal_model import ParsedSignal, ExecutionSignal, SignalStatus
+    from signal_model import ParsedSignal, ExecutionSignal, SignalStatus
 except ImportError:
     # Mock signal models when not available
     class SignalStatus:

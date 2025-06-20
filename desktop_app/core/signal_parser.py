@@ -22,7 +22,7 @@ except ImportError:
     easyocr = None
 
 from config.settings import settings
-from models.signal_model import RawSignal, ParsedSignal
+from signal_model import RawSignal, ParsedSignal
 from core.logger import get_logger
 
 logger = get_logger(__name__)

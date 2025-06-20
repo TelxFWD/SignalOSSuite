@@ -23,7 +23,7 @@ from core.signal_engine import SignalEngine
 from core.telegram_listener import TelegramListener
 from core.signal_parser import SignalParser
 from core.mt5_sync import MT5Sync
-from models.signal_model import RawSignal, ParsedSignal, ExecutionSignal, SignalStatus
+from signal_model import RawSignal, ParsedSignal, ExecutionSignal, SignalStatus
 
 logger = get_signalos_logger(__name__)
 

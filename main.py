@@ -28,7 +28,24 @@ def index():
     try:
         return render_template('dashboard.html')
     except Exception as e:
-        return f"<h1>SignalOS Dashboard</h1><p>Application is running. Template error: {str(e)}</p><p><a href='/api/test'>Test API</a></p>", 200
+        return f"""
+        <html>
+        <head><title>SignalOS Dashboard</title></head>
+        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5;">
+            <h1 style="color: #333;">SignalOS Dashboard</h1>
+            <p style="color: #666;">Application is running successfully!</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Quick Test Links:</h3>
+                <ul>
+                    <li><a href="/api/health" style="color: #007bff;">Health Check</a></li>
+                    <li><a href="/api/test" style="color: #007bff;">API Test</a></li>
+                    <li><a href="/admin/login" style="color: #007bff;">Admin Panel</a></li>
+                </ul>
+            </div>
+            <p style="color: #999; font-size: 12px;">Template error: {str(e)}</p>
+        </body>
+        </html>
+        """, 200
 
 @app.route('/api/health')
 def get_health():
@@ -42,6 +59,8 @@ def get_health():
             'mt5': False
         }
     })
+
+
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -161,14 +180,7 @@ def get_daily_analytics():
     
     return jsonify({'daily_stats': stats})
 
-@app.route('/api/test')
-def test_endpoint():
-    """Test endpoint for verification"""
-    return jsonify({
-        'status': 'ok',
-        'message': 'SignalOS API is running',
-        'timestamp': datetime.now().isoformat()
-    })
+
 
 @app.route('/api/telegram/sessions', methods=['POST'])
 def add_telegram_session():

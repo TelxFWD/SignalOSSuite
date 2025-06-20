@@ -26,9 +26,6 @@ except ImportError:
 def index():
     """Main dashboard page"""
     return render_template('dashboard.html')
-        </body>
-        </html>
-        """, 200
 
 @app.route('/api/health')
 def get_health():

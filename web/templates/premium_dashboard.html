@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalOS - Premium Forex Signal Automation</title>
+    <link rel="stylesheet" href="/static/css/premium.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <div class="dashboard-layout fade-in">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <!-- Logo -->
+            <div style="margin-bottom: 2rem;">
+                <h1 class="text-gradient" style="font-family: 'Sora', sans-serif; font-size: 1.5rem; font-weight: 700;">SignalOS</h1>
+                <p style="color: var(--dark-400); font-size: 0.75rem; margin-top: 0.25rem;">Professional Trading Platform</p>
+            </div>
+
+            <!-- Navigation -->
+            <div class="nav-menu">
+                <a href="#overview" class="nav-item active" data-tab="overview">
+                    <i data-feather="home" class="nav-icon"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#telegram" class="nav-item" data-tab="telegram">
+                    <i data-feather="message-circle" class="nav-icon"></i>
+                    <span>Telegram</span>
+                </a>
+                <a href="#mt5" class="nav-item" data-tab="mt5">
+                    <i data-feather="trending-up" class="nav-icon"></i>
+                    <span>MT5 Terminals</span>
+                </a>
+                <a href="#strategies" class="nav-item" data-tab="strategies">
+                    <i data-feather="layers" class="nav-icon"></i>
+                    <span>Strategies</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-tab="analytics">
+                    <i data-feather="bar-chart-2" class="nav-icon"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#settings" class="nav-item" data-tab="settings">
+                    <i data-feather="settings" class="nav-icon"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+
+            <!-- User Info -->
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+                <div class="glass-card" style="padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div style="width: 2rem; height: 2rem; background: linear-gradient(135deg, var(--primary-500), var(--accent-500)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.875rem;">
+                            U
+                        </div>
+                        <div>
+                            <div style="font-weight: 500; color: white; font-size: 0.875rem;">User Demo</div>
+                            <div style="font-size: 0.75rem; color: var(--dark-400);">Pro Plan</div>
+                        </div>
+                    </div>
+                    <div class="status-badge status-online">
+                        <div class="pulse-dot green"></div>
+                        Online
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="page-header">
+                <div>
+                    <h1 style="font-size: 1.875rem; font-weight: 700; color: white; font-family: 'Sora', sans-serif;">Dashboard</h1>
+                    <p style="color: var(--dark-400); margin-top: 0.25rem;">Monitor your trading automation in real-time</p>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <!-- System Status -->
+                    <div class="status-badge" id="system-status">
+                        <div class="pulse-dot green"></div>
+                        <span>All Systems Online</span>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <button class="btn btn-primary" onclick="simulateSignal()">
+                        <i data-feather="zap" style="width: 1rem; height: 1rem;"></i>
+                        Test Signal
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div style="padding: 2rem;">
+                <!-- Overview Tab -->
+                <div id="tab-overview" class="tab-content active">
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid slide-up">
+                        <div class="stat-card glass-card stagger-1">
+                            <div class="stat-value" id="trades-today">0</div>
+                            <div class="stat-label">Trades Today</div>
+                            <div class="stat-change positive" id="trades-change">+0% from yesterday</div>
+                        </div>
+                        <div class="stat-card glass-card stagger-2">
+                            <div class="stat-value" id="total-pips">0</div>
+                            <div class="stat-label">Total Pips</div>
+                            <div class="stat-change positive" id="pips-change">+0 this week</div>
+                        </div>
+                        <div class="stat-card glass-card stagger-3">
+                            <div class="stat-value" id="win-rate">0%</div>
+                            <div class="stat-label">Win Rate</div>
+                            <div class="stat-change positive" id="win-rate-change">Last 30 days</div>
+                        </div>
+                        <div class="stat-card glass-card stagger-4">
+                            <div class="stat-value" id="active-signals">0</div>
+                            <div class="stat-label">Active Signals</div>
+                            <div class="stat-change" id="signals-change">Processing</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions slide-up">
+                        <div class="action-card glass-card" onclick="showTab('telegram')">
+                            <div class="action-icon">
+                                <i data-feather="message-circle"></i>
+                            </div>
+                            <div class="action-title">Setup Telegram</div>
+                            <div class="action-desc">Connect your Telegram channels</div>
+                        </div>
+                        <div class="action-card glass-card" onclick="showTab('mt5')">
+                            <div class="action-icon">
+                                <i data-feather="trending-up"></i>
+                            </div>
+                            <div class="action-title">Add MT5 Terminal</div>
+                            <div class="action-desc">Configure trading terminals</div>
+                        </div>
+                        <div class="action-card glass-card" onclick="showTab('strategies')">
+                            <div class="action-icon">
+                                <i data-feather="layers"></i>
+                            </div>
+                            <div class="action-title">Create Strategy</div>
+                            <div class="action-desc">Build trading strategies</div>
+                        </div>
+                    </div>
+
+                    <!-- System Health -->
+                    <div class="chart-container slide-up">
+                        <h3 class="chart-title">System Health</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                            <div class="health-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="color: var(--dark-300); font-size: 0.875rem;">Database</span>
+                                    <span class="status-badge status-online" id="db-status">Connected</span>
+                                </div>
+                                <div style="width: 100%; height: 0.5rem; background: var(--dark-800); border-radius: 0.25rem; overflow: hidden;">
+                                    <div style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--primary-500), var(--primary-400)); border-radius: 0.25rem;"></div>
+                                </div>
+                            </div>
+                            <div class="health-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="color: var(--dark-300); font-size: 0.875rem;">Telegram API</span>
+                                    <span class="status-badge status-warning" id="telegram-status">Disconnected</span>
+                                </div>
+                                <div style="width: 100%; height: 0.5rem; background: var(--dark-800); border-radius: 0.25rem; overflow: hidden;">
+                                    <div style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--warning), #fbbf24); border-radius: 0.25rem;"></div>
+                                </div>
+                            </div>
+                            <div class="health-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="color: var(--dark-300); font-size: 0.875rem;">MT5 Connection</span>
+                                    <span class="status-badge status-offline" id="mt5-status">Disconnected</span>
+                                </div>
+                                <div style="width: 100%; height: 0.5rem; background: var(--dark-800); border-radius: 0.25rem; overflow: hidden;">
+                                    <div style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--error), #f87171); border-radius: 0.25rem;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="table-container slide-up">
+                        <div class="table-header">
+                            <h3 style="color: white; font-weight: 600;">Recent Activity</h3>
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Event</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-log">
+                                <tr>
+                                    <td style="color: var(--dark-400);">No recent activity</td>
+                                    <td colspan="3" style="color: var(--dark-500); font-style: italic;">Connect your services to see activity</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Other tabs will be dynamically loaded -->
+                <div id="tab-telegram" class="tab-content">
+                    <div class="slide-up">
+                        <h2 style="color: white; margin-bottom: 1.5rem;">Telegram Configuration</h2>
+                        <div class="glass-card" style="padding: 2rem;">
+                            <p style="color: var(--dark-300); margin-bottom: 2rem;">Connect your Telegram account to receive and process trading signals from channels.</p>
+                            <button class="btn btn-primary" onclick="setupTelegram()">
+                                <i data-feather="plus" style="width: 1rem; height: 1rem;"></i>
+                                Add Telegram Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-mt5" class="tab-content">
+                    <div class="slide-up">
+                        <h2 style="color: white; margin-bottom: 1.5rem;">MT5 Terminals</h2>
+                        <div class="glass-card" style="padding: 2rem;">
+                            <p style="color: var(--dark-300); margin-bottom: 2rem;">Configure your MetaTrader 5 terminals for automated trading execution.</p>
+                            <button class="btn btn-primary" onclick="addMT5Terminal()">
+                                <i data-feather="plus" style="width: 1rem; height: 1rem;"></i>
+                                Add MT5 Terminal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-strategies" class="tab-content">
+                    <div class="slide-up">
+                        <h2 style="color: white; margin-bottom: 1.5rem;">Trading Strategies</h2>
+                        <div class="glass-card" style="padding: 2rem;">
+                            <p style="color: var(--dark-300); margin-bottom: 2rem;">Create and manage your automated trading strategies.</p>
+                            <button class="btn btn-primary" onclick="createStrategy()">
+                                <i data-feather="plus" style="width: 1rem; height: 1rem;"></i>
+                                Create Strategy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-analytics" class="tab-content">
+                    <div class="slide-up">
+                        <h2 style="color: white; margin-bottom: 1.5rem;">Performance Analytics</h2>
+                        <div class="chart-container">
+                            <h3 class="chart-title">Daily Performance</h3>
+                            <canvas id="performance-chart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-settings" class="tab-content">
+                    <div class="slide-up">
+                        <h2 style="color: white; margin-bottom: 1.5rem;">Settings</h2>
+                        <div class="glass-card" style="padding: 2rem;">
+                            <div style="margin-bottom: 2rem;">
+                                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <span style="color: white; font-weight: 500;">Shadow Mode</span>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="shadow-mode">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+                                <p style="color: var(--dark-400); font-size: 0.875rem;">Hide SL/TP levels for prop firm compatibility</p>
+                            </div>
+                            
+                            <div style="margin-bottom: 2rem;">
+                                <label style="color: white; font-weight: 500; margin-bottom: 0.5rem; display: block;">Risk Percentage</label>
+                                <input type="number" class="input-field" style="width: 200px;" value="2" min="0.1" max="10" step="0.1">
+                                <p style="color: var(--dark-400); font-size: 0.875rem; margin-top: 0.5rem;">Percentage of account balance per trade</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center;">
+            <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+            <p style="color: white;">Processing...</p>
+        </div>
+    </div>
+
+    <script src="/static/js/premium-dashboard.js"></script>
+</body>
+</html>

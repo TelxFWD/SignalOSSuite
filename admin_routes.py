@@ -53,15 +53,51 @@ def admin_dashboard():
     # System health data
     latest_health = SystemHealth.query.order_by(SystemHealth.timestamp.desc()).first()
     
-    return render_template('admin_dashboard.html',
-                         total_users=total_users,
-                         active_users=active_users,
-                         total_signals=total_signals,
-                         total_trades=total_trades,
-                         recent_signals=recent_signals,
-                         recent_trades=recent_trades,
-                         license_stats=license_stats,
-                         latest_health=latest_health)
+    try:
+        return render_template('premium_admin.html',
+                             total_users=total_users,
+                             active_users=active_users,
+                             total_signals=total_signals,
+                             total_trades=total_trades,
+                             recent_signals=recent_signals,
+                             recent_trades=recent_trades,
+                             license_stats=license_stats,
+                             latest_health=latest_health)
+    except Exception as e:
+        return f"""
+        <html>
+        <head>
+            <title>SignalOS Admin - Premium Control Panel</title>
+            <link rel="stylesheet" href="/static/css/premium.css">
+        </head>
+        <body>
+            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+                <div style="text-align: center;">
+                    <h1 class="text-gradient" style="font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">SignalOS Admin</h1>
+                    <div class="glass-card" style="padding: 2rem; max-width: 500px;">
+                        <h3 style="color: white; margin-bottom: 1.5rem;">System Overview</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-400);">{total_users}</div>
+                                <div style="color: var(--dark-400); font-size: 0.875rem;">Total Users</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-400);">{total_signals}</div>
+                                <div style="color: var(--dark-400); font-size: 0.875rem;">Total Signals</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <a href="/admin/users" class="btn btn-secondary">Manage Users</a>
+                            <a href="/admin/signals" class="btn btn-primary">Debug Signals</a>
+                            <a href="/admin/system-metrics" class="btn btn-accent">System Metrics</a>
+                        </div>
+                        <p style="color: var(--dark-500); font-size: 0.75rem; margin-top: 1rem;">Template fallback: {str(e)}</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """, 200
 
 
 @app.route('/admin/login', methods=['GET', 'POST'])

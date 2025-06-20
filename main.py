@@ -26,23 +26,30 @@ except ImportError:
 def index():
     """Main dashboard page"""
     try:
-        return render_template('dashboard.html')
+        return render_template('premium_dashboard.html')
     except Exception as e:
         return f"""
         <html>
-        <head><title>SignalOS Dashboard</title></head>
-        <body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5;">
-            <h1 style="color: #333;">SignalOS Dashboard</h1>
-            <p style="color: #666;">Application is running successfully!</p>
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3>Quick Test Links:</h3>
-                <ul>
-                    <li><a href="/api/health" style="color: #007bff;">Health Check</a></li>
-                    <li><a href="/api/test" style="color: #007bff;">API Test</a></li>
-                    <li><a href="/admin/login" style="color: #007bff;">Admin Panel</a></li>
-                </ul>
+        <head>
+            <title>SignalOS - Premium Trading Platform</title>
+            <link rel="stylesheet" href="/static/css/premium.css">
+        </head>
+        <body>
+            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+                <div style="text-align: center;">
+                    <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                    <h2 class="text-gradient" style="font-family: 'Sora', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">SignalOS</h2>
+                    <p style="color: var(--dark-400); margin-bottom: 2rem;">Premium Forex Signal Automation</p>
+                    <div class="glass-card" style="padding: 2rem; max-width: 400px;">
+                        <h3 style="color: white; margin-bottom: 1rem;">Quick Access</h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <a href="/api/health" class="btn btn-secondary">System Health</a>
+                            <a href="/admin/login" class="btn btn-primary">Admin Panel</a>
+                        </div>
+                    </div>
+                    <p style="color: var(--dark-500); font-size: 0.75rem; margin-top: 1rem;">Template loading issue: {str(e)}</p>
+                </div>
             </div>
-            <p style="color: #999; font-size: 12px;">Template error: {str(e)}</p>
         </body>
         </html>
         """, 200

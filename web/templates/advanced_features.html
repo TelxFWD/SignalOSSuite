@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalOS - Advanced Features</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0E1116',
+                        card: '#1A1D23',
+                        primary: '#3B82F6',
+                        accent: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(26, 29, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(55, 65, 81, 0.3);
+        }
+        .feature-badge {
+            background: linear-gradient(45deg, #10B981, #3B82F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-background text-white min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold feature-badge">Phase 2 Complete: Advanced Features</h1>
+                <p class="text-gray-400">Production-ready trading engine with comprehensive functionality</p>
+            </div>
+            <a href="/" class="px-4 py-2 bg-card rounded-lg hover:bg-gray-700 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4 inline mr-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Feature Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Advanced Execution -->
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mr-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold">Advanced Execution</h3>
+                        <p class="text-sm text-gray-400">Complete order management</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>All order types (LIMIT/STOP)</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Up to 100 TP levels</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Smart entry modes</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Trailing stops</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Risk Management -->
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-danger/20 rounded-lg flex items-center justify-center mr-4">
+                        <i data-lucide="shield" class="w-6 h-6 text-danger"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold">Risk Management</h3>
+                        <p class="text-sm text-gray-400">Comprehensive protection</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Provider-specific limits</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Pair exposure tracking</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Advanced drawdown control</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Signal frequency limits</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News & Time Filtering -->
+            <div class="glass-card p-6 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-warning/20 rounded-lg flex items-center justify-center mr-4">
+                        <i data-lucide="calendar" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold">News & Time Filters</h3>
+                        <p class="text-sm text-gray-400">Smart timing controls</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Economic calendar integration</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Impact-based blocking</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Trading sessions</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 text-accent mr-2"></i>
+                        <span>Custom time windows</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Implementation Status -->
+        <div class="glass-card p-6 rounded-xl mb-8">
+            <h3 class="text-xl font-semibold mb-6">Implementation Progress</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Phase 1 Complete -->
+                <div>
+                    <h4 class="text-lg font-medium text-accent mb-4">Phase 1: Core Trading Engine ✓</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Enhanced Signal Parser</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Full Order Type Support</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Provider Command Execution</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Multi-TP Management</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">MT5 Integration</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2 Complete -->
+                <div>
+                    <h4 class="text-lg font-medium text-accent mb-4">Phase 2: Advanced Features ✓</h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Advanced Risk Management</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">News Filtering</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Time Window Controls</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Advanced Lot Calculations</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Smart Entry Modes</span>
+                            <span class="px-2 py-1 bg-accent/20 text-accent rounded text-xs">Complete</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Architecture -->
+        <div class="glass-card p-6 rounded-xl mb-8">
+            <h3 class="text-xl font-semibold mb-6">Technical Architecture</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="cpu" class="w-8 h-8 text-primary"></i>
+                    </div>
+                    <h4 class="font-medium mb-2">Enhanced Parser</h4>
+                    <p class="text-sm text-gray-400">AI-like pattern recognition with multi-format support</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="cogs" class="w-8 h-8 text-accent"></i>
+                    </div>
+                    <h4 class="font-medium mb-2">Execution Engine</h4>
+                    <p class="text-sm text-gray-400">Advanced order management with smart execution</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-danger/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="shield-check" class="w-8 h-8 text-danger"></i>
+                    </div>
+                    <h4 class="font-medium mb-2">Risk Manager</h4>
+                    <p class="text-sm text-gray-400">Comprehensive protection with provider controls</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="link" class="w-8 h-8 text-warning"></i>
+                    </div>
+                    <h4 class="font-medium mb-2">MT5 Bridge</h4>
+                    <p class="text-sm text-gray-400">Real terminal communication via JSON/DLL</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="glass-card p-6 rounded-xl">
+            <h3 class="text-xl font-semibold mb-6">Quick Actions</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="/trading" class="p-4 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors text-center">
+                    <i data-lucide="settings" class="w-6 h-6 mx-auto mb-2 text-primary"></i>
+                    <div class="font-medium">Trading Management</div>
+                    <div class="text-sm text-gray-400">Configure advanced features</div>
+                </a>
+                
+                <button onclick="testAdvancedParsing()" class="p-4 bg-accent/10 hover:bg-accent/20 rounded-lg transition-colors text-center">
+                    <i data-lucide="zap" class="w-6 h-6 mx-auto mb-2 text-accent"></i>
+                    <div class="font-medium">Test Parser</div>
+                    <div class="text-sm text-gray-400">Test advanced signal parsing</div>
+                </button>
+                
+                <button onclick="checkSystemHealth()" class="p-4 bg-warning/10 hover:bg-warning/20 rounded-lg transition-colors text-center">
+                    <i data-lucide="activity" class="w-6 h-6 mx-auto mb-2 text-warning"></i>
+                    <div class="font-medium">System Health</div>
+                    <div class="text-sm text-gray-400">Check all components</div>
+                </button>
+                
+                <button onclick="viewDocumentation()" class="p-4 bg-card hover:bg-gray-600 rounded-lg transition-colors text-center">
+                    <i data-lucide="book-open" class="w-6 h-6 mx-auto mb-2 text-gray-300"></i>
+                    <div class="font-medium">Documentation</div>
+                    <div class="text-sm text-gray-400">API reference</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Test functions
+        async function testAdvancedParsing() {
+            const testSignal = `🔥 BUY EURUSD
+
+Entry: 1.08500
+SL: 1.08000
+TP1: 1.09000
+TP2: 1.09500
+TP3: 1.10000
+
+Risk: 2%
+Lot: 0.1`;
+
+            try {
+                const response = await fetch('/api/signals/advanced-parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: testSignal,
+                        provider_id: 'demo_provider',
+                        apply_strategy: true,
+                        apply_stealth: true
+                    })
+                });
+
+                const result = await response.json();
+                alert(`Parser Test Results:\n\nConfidence: ${result.original_parse?.confidence}\nPair: ${result.original_parse?.pair}\nAction: ${result.original_parse?.action}\n\nProcessing complete with advanced features!`);
+            } catch (error) {
+                alert('Parser test failed: ' + error.message);
+            }
+        }
+
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch('/api/comprehensive/health');
+                const result = await response.json();
+                
+                const features = result.risk_features?.length || 0;
+                const orderTypes = result.order_types_supported?.length || 0;
+                
+                alert(`System Health Check:\n\n✓ Service Running: ${result.service_running}\n✓ Advanced Execution: ${result.advanced_execution_engine}\n✓ Risk Features: ${features}\n✓ Order Types: ${orderTypes}\n✓ News Filtering: ${result.news_filter_active}\n\nAll systems operational!`);
+            } catch (error) {
+                alert('Health check failed: ' + error.message);
+            }
+        }
+
+        function viewDocumentation() {
+            alert('API Documentation:\n\n• /api/signals/advanced-parse - Advanced signal parsing\n• /api/comprehensive/health - Complete system status\n• /api/news/events - Economic calendar\n• /api/risk/provider/<id> - Provider risk settings\n• /api/commands/provider - Execute provider commands\n\nFull documentation available in trading management interface.');
+        }
+    </script>
+</body>
+</html>

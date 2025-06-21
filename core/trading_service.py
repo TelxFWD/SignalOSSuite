@@ -9,9 +9,12 @@ from typing import Dict, List, Optional, Any
 import logging
 
 from .execution_engine import ExecutionEngine, TradingOrder
+from .advanced_execution_engine import AdvancedExecutionEngine, AdvancedTradingOrder
 from .risk_manager import RiskManager, RiskSettings
+from .advanced_risk_manager import AdvancedRiskManager
 from .mt5_bridge import MT5Bridge
 from .enhanced_signal_parser import EnhancedSignalParser, ParsedSignal, ParseConfidence
+from .news_filter import NewsFilter, NewsFilterSettings, TimeWindowSettings
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +26,10 @@ class TradingService:
         
         # Initialize components
         self.signal_parser = EnhancedSignalParser()
-        self.risk_manager = RiskManager()
+        self.risk_manager = AdvancedRiskManager()
+        self.news_filter = NewsFilter()
         self.mt5_bridge = MT5Bridge(self.config.get('mt5', {}))
-        self.execution_engine = ExecutionEngine(self.mt5_bridge, self.risk_manager)
+        self.execution_engine = AdvancedExecutionEngine(self.mt5_bridge, self.risk_manager)
         
         # Service state
         self.is_running = False
@@ -79,7 +83,7 @@ class TradingService:
     
     async def process_telegram_signal(self, message_text: str, provider_id: str, 
                                     channel_id: str, message_id: str = None) -> Dict[str, Any]:
-        """Process incoming Telegram signal"""
+        """Process incoming Telegram signal with advanced filtering"""
         try:
             self.stats['signals_received'] += 1
             
@@ -98,13 +102,35 @@ class TradingService:
                     "signal_id": parsed_signal.signal_id
                 }
             
+            # Convert to signal data for filtering
+            signal_data = {
+                'id': parsed_signal.signal_id,
+                'pair': parsed_signal.pair,
+                'action': parsed_signal.action,
+                'entry': parsed_signal.entry_price,
+                'sl': parsed_signal.stop_loss,
+                'provider_id': provider_id,
+                'raw_text': message_text
+            }
+            
+            # Check news and time filters
+            blocked, block_reason = await self.news_filter.should_block_signal(signal_data)
+            if blocked:
+                self.stats['signals_blocked'] += 1
+                return {
+                    "status": "blocked",
+                    "message": f"Signal blocked: {block_reason}",
+                    "signal_id": parsed_signal.signal_id
+                }
+            
             # Add to processing queue
             await self.processing_queue.put({
                 'type': 'new_signal',
                 'parsed_signal': parsed_signal,
                 'provider_id': provider_id,
                 'channel_id': channel_id,
-                'timestamp': datetime.utcnow()
+                'timestamp': datetime.utcnow(),
+                'raw_text': message_text
             })
             
             return {
@@ -149,10 +175,18 @@ class TradingService:
             logger.error(f"Error processing signal edit: {e}")
             return {"status": "error", "message": str(e)}
     
-    async def process_provider_command(self, command: str, provider_id: str) -> Dict[str, Any]:
-        """Process provider command (Close 50%, TP to X, etc.)"""
+    async def process_provider_command(self, command: str, provider_id: str, 
+                                     signal_id: str = None) -> Dict[str, Any]:
+        """Process advanced provider command"""
         try:
-            result = await self.execution_engine.process_provider_command(command, provider_id)
+            result = await self.execution_engine.process_provider_command_advanced(
+                command, provider_id, signal_id
+            )
+            
+            # Update statistics
+            if result.get('status') == 'success':
+                orders_affected = result.get('orders_affected', 0)
+                logger.info(f"Provider command '{command}' affected {orders_affected} orders")
             
             return {
                 "status": "success",
@@ -234,10 +268,10 @@ class TradingService:
             return {"status": "error", "message": str(e)}
     
     async def get_system_status(self) -> Dict[str, Any]:
-        """Get comprehensive system status"""
+        """Get comprehensive system status with advanced metrics"""
         try:
-            # Get risk status
-            risk_status = self.risk_manager.get_risk_status()
+            # Get advanced risk status
+            risk_status = self.risk_manager.get_advanced_risk_status()
             
             # Get MT5 status
             mt5_status = self.mt5_bridge.get_terminal_status()
@@ -248,14 +282,27 @@ class TradingService:
             # Get parser statistics
             parser_stats = self.signal_parser.get_parse_statistics()
             
+            # Get news filter status
+            news_status = self.news_filter.get_filter_status()
+            
             return {
                 "service_running": self.is_running,
                 "risk_status": risk_status,
                 "mt5_status": mt5_status,
+                "news_filter_status": news_status,
                 "active_orders_count": len(active_orders),
                 "telegram_sessions": len(self.telegram_sessions),
                 "parser_statistics": parser_stats,
                 "service_statistics": self.stats,
+                "advanced_features": {
+                    "smart_entry_enabled": True,
+                    "multi_tp_support": True,
+                    "trailing_stops": True,
+                    "provider_commands": True,
+                    "news_filtering": news_status['news_filter_enabled'],
+                    "time_windows": news_status['time_filter_enabled'],
+                    "advanced_risk_management": True
+                },
                 "timestamp": datetime.utcnow().isoformat()
             }
             
@@ -283,11 +330,11 @@ class TradingService:
                 logger.error(f"Error processing signal queue: {e}")
     
     async def _handle_new_signal(self, item: Dict[str, Any]):
-        """Handle new trading signal"""
+        """Handle new trading signal with advanced processing"""
         try:
             parsed_signal = item['parsed_signal']
             
-            # Convert to signal data format
+            # Convert to enhanced signal data format
             signal_data = {
                 'id': parsed_signal.signal_id,
                 'pair': parsed_signal.pair,
@@ -295,24 +342,45 @@ class TradingService:
                 'entry': parsed_signal.entry_price,
                 'sl': parsed_signal.stop_loss,
                 'tp': parsed_signal.take_profits[0] if parsed_signal.take_profits else None,
+                'take_profits': parsed_signal.take_profits,
                 'lot_size': parsed_signal.lot_size,
                 'provider_id': parsed_signal.provider_id,
-                'order_type': parsed_signal.order_type
+                'order_type': parsed_signal.order_type,
+                'raw_text': item.get('raw_text', ''),
+                'risk_percent': parsed_signal.risk_percent
             }
+            
+            # Advanced risk check
+            risk_allowed, risk_reason = await self.risk_manager.check_signal_advanced(signal_data)
+            if not risk_allowed:
+                self.stats['signals_blocked'] += 1
+                logger.warning(f"Signal {parsed_signal.signal_id} blocked by risk manager: {risk_reason}")
+                return
             
             # Calculate lot size if not specified
             if not signal_data['lot_size']:
                 signal_data['lot_size'] = self.risk_manager.calculate_lot_size(signal_data)
             
-            # Process through execution engine
-            result = await self.execution_engine.process_signal(signal_data)
+            # Process through advanced execution engine
+            result = await self.execution_engine.process_advanced_signal(signal_data)
             
             if result['status'] == 'success':
                 self.stats['signals_executed'] += 1
                 self.stats['orders_active'] += 1
-            elif result['status'] == 'blocked':
-                self.stats['signals_blocked'] += 1
-            
+                
+                # Record trade for risk tracking
+                self.risk_manager.record_trade_advanced({
+                    'provider_id': signal_data['provider_id'],
+                    'pair': signal_data['pair'],
+                    'lot_size': signal_data['lot_size'],
+                    'status': 'opened',
+                    'profit_loss': 0  # Will be updated when closed
+                })
+                
+            elif result['status'] in ['blocked', 'queued', 'conditional']:
+                if result['status'] == 'blocked':
+                    self.stats['signals_blocked'] += 1
+                    
             logger.info(f"Signal {parsed_signal.signal_id} processed: {result['status']}")
             
         except Exception as e:

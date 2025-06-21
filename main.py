@@ -68,6 +68,11 @@ def trading_dashboard():
     """Advanced trading management dashboard"""
     return render_template('trading_dashboard.html')
 
+@app.route('/advanced-features')
+def advanced_features():
+    """Phase 2 complete - Advanced features showcase"""
+    return render_template('advanced_features.html')
+
 @app.route('/api/health')
 def get_health():
     """Get system health status"""
